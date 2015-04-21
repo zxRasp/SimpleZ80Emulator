@@ -11,7 +11,7 @@ public class SimpleULA implements SystemBus {
 
     @Override
     public int readByteFromMemory(int address) {
-        return 0x01;
+        return 0x06;
     }
 
     @Override

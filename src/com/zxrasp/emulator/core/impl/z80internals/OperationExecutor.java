@@ -178,4 +178,12 @@ public class OperationExecutor {
         context.incrementAndGet(RegisterNames.PC);
         return 4;
     }
+
+    public static long ld_8(Context context, RegisterNames registerNames) {
+        int pc = context.get(RegisterNames.PC);
+        int value = context.getSystemBus().readByteFromMemory(pc + 1);
+        context.set(registerNames, value);
+        context.set(RegisterNames.PC, pc + 2);
+        return 7;
+    }
 }

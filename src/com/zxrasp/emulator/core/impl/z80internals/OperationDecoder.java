@@ -128,6 +128,7 @@ public class OperationDecoder {
                     case 5:
                         return OperationExecutor.dec8(context, r8.get(y));
                     case 6:
+                        return OperationExecutor.ld_8(context, r8.get(y));
                     case 7:
 
                 }
