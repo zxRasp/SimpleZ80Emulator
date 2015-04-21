@@ -237,4 +237,49 @@ public class OperationExecutor {
         context.incrementAndGet(RegisterNames.PC);
         return 4;
     }
+
+    public static long performALUOperation(Context context, ALUOperations operation, RegisterNames register) {
+        int value;
+        int result;
+        if (register == RegisterNames.HL) {
+            value = context.getSystemBus().readByteFromMemory(context.get(RegisterNames.HL));
+            result = 7;
+        } else {
+            value = context.get(register);
+            result = 4;
+        }
+
+        int acc = context.get(RegisterNames.A);
+
+        switch (operation) {
+            case ADD_A:
+                context.set(RegisterNames.A, acc + value);
+                break;
+            case ADC_A:
+                context.set(RegisterNames.A, acc + value + (context.get(Flags.C) ? 1 : 0));
+                break;
+            case SUB:
+                context.set(RegisterNames.A, acc - value);
+                break;
+            case SUBC_A:
+                context.set(RegisterNames.A, acc - value - (context.get(Flags.C) ? 1 : 0));
+                break;
+            case AND:
+                context.set(RegisterNames.A, acc & value);
+                break;
+            case XOR:
+                context.set(RegisterNames.A, acc ^ value);
+                break;
+            case OR:
+                context.set(RegisterNames.A, acc | value);
+                break;
+            case CP:
+                // todo
+                break;
+        }
+
+        context.incrementAndGet(RegisterNames.PC);
+        return result;
+    }
+
 }
