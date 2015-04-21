@@ -186,4 +186,44 @@ public class OperationExecutor {
         context.set(RegisterNames.PC, pc + 2);
         return 7;
     }
+
+    public static long rlca(Context context) {
+        // todo
+        return 4;
+    }
+
+    public static long rrca(Context context) {
+        // todo
+        return 0;
+    }
+
+    public static long rla(Context context) {
+        // todo
+        return 0;
+    }
+
+    public static long rra(Context context) {
+        // todo
+        return 0;
+    }
+
+    public static long daa(Context context) {
+        // todo
+        return 0;
+    }
+
+    public static long cpl(Context context) {
+        // todo
+        return 0;
+    }
+
+    public static long scf(Context context) {
+        // todo
+        return 0;
+    }
+
+    public static long ccf(Context context) {
+        // todo
+        return 0;
+    }
 }

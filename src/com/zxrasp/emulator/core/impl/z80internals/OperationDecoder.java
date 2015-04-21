@@ -130,6 +130,24 @@ public class OperationDecoder {
                     case 6:
                         return OperationExecutor.ld_8(context, r8.get(y));
                     case 7:
+                        switch (y) {
+                            case 0:
+                                return OperationExecutor.rlca(context);
+                            case 1:
+                                return OperationExecutor.rrca(context);
+                            case 2:
+                                return OperationExecutor.rla(context);
+                            case 3:
+                                return OperationExecutor.rra(context);
+                            case 4:
+                                return OperationExecutor.daa(context);
+                            case 5:
+                                return OperationExecutor.cpl(context);
+                            case 6:
+                                return OperationExecutor.scf(context);
+                            case 7:
+                                return OperationExecutor.ccf(context);
+                        }
 
                 }
             case 1:
