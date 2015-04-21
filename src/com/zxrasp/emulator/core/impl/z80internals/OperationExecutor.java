@@ -312,4 +312,34 @@ public class OperationExecutor {
         context.set(RegisterNames.SP, sp + 2);
         return 10;
     }
+
+    public static long exx(Context context) {
+        // todo
+        context.incrementAndGet(RegisterNames.PC);
+        return 4;
+    }
+
+    public static long jp_hl(Context context) {
+        context.set(RegisterNames.PC, context.get(RegisterNames.HL));
+        return 4;
+    }
+
+    public static long ld_sp_hl(Context context) {
+        context.set(RegisterNames.SP, context.get(RegisterNames.HL));
+        return 6;
+    }
+
+    public static long jp_cc(Context context, Flags flags) {
+        boolean cc = context.get(flags);
+        int pc = context.get(RegisterNames.PC);
+
+        if (cc) {
+            int jumpAddress = context.getSystemBus().readWordFromMemory(pc + 1);
+            context.set(RegisterNames.PC, jumpAddress);
+            return 10;
+        }
+
+        context.set(RegisterNames.PC, pc + 3);
+        return 10;
+    }
 }

@@ -166,11 +166,15 @@ public class OperationDecoder {
                                     case 0:
                                         return OperationExecutor.ret(context);
                                     case 1:
+                                        return OperationExecutor.exx(context);
                                     case 2:
+                                        return OperationExecutor.jp_hl(context);
                                     case 3:
+                                        return OperationExecutor.ld_sp_hl(context);
                                 }
                         }
                     case 2:
+                        return OperationExecutor.jp_cc(context, Flags.values()[y]);
                     case 3:
                     case 4:
                     case 5:
