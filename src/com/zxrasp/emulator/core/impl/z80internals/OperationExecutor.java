@@ -226,4 +226,15 @@ public class OperationExecutor {
         // todo
         return 0;
     }
+
+    public static long ld_r8_r8(Context context, RegisterNames dst, RegisterNames src) {
+        if (dst == RegisterNames.HL && src == RegisterNames.HL) { // special case - HALT
+            context.setHalt(true);
+            return 4;
+        }
+
+        context.set(dst, context.get(src));
+        context.incrementAndGet(RegisterNames.PC);
+        return 4;
+    }
 }

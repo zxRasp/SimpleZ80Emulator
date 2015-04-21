@@ -148,9 +148,9 @@ public class OperationDecoder {
                             case 7:
                                 return OperationExecutor.ccf(context);
                         }
-
                 }
             case 1:
+                return OperationExecutor.ld_r8_r8(context, r8.get(y), r8.get(z));
             case 2:
             case 3:
         }

@@ -28,6 +28,15 @@ public class Z80Context implements Context {
         halted = false;
     }
 
+    @Override
+    public boolean isHalted() {
+        return halted;
+    }
+
+    @Override
+    public void setHalt(boolean value) {
+        halted = value;
+    }
 
     @Override
     public SystemBus getSystemBus() {

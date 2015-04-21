@@ -6,6 +6,10 @@ public interface Context {
 
     void reset();
 
+    boolean isHalted();
+
+    void setHalt(boolean value);
+
     SystemBus getSystemBus();
 
     void set(RegisterNames register, int value);

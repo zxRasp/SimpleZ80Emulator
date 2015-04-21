@@ -24,7 +24,7 @@ public class Z80 implements CPU {
 
     @Override
     public boolean isHalted() {
-        return false;     // todo
+        return context.isHalted();
     }
 
     @Override
