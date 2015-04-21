@@ -55,19 +55,19 @@ public class OperationExecutor {
         return 7;
     }
 
-    public static long ld_16(Context context, RegisterNames registerName) {
+    public static long ld_16(Context context, RegisterNames register) {
         int pc = context.get(RegisterNames.PC);
         int word = context.getSystemBus().readWordFromMemory(pc + 1);
-        context.set(registerName, word);
+        context.set(register, word);
         context.set(RegisterNames.PC, pc + 3);
         return 10;
     }
 
-    public static long add_hl(Context context, RegisterNames registerName) {
+    public static long add_hl(Context context, RegisterNames register) {
         int pc = context.get(RegisterNames.PC);
-        int rvalue = context.get(registerName);
+        int rvalue = context.get(register);
         int mvalue = context.getSystemBus().readWordFromMemory(pc);
-        context.set(registerName, rvalue + mvalue);
+        context.set(register, rvalue + mvalue);
         // todo: set flags
         context.set(RegisterNames.PC, pc + 3);
         return 11;
@@ -139,50 +139,50 @@ public class OperationExecutor {
         return 13;
     }
 
-    public static long inc16(Context context, RegisterNames registerName) {
-        context.incrementAndGet(registerName);
+    public static long inc16(Context context, RegisterNames register) {
+        context.incrementAndGet(register);
         context.incrementAndGet(RegisterNames.PC);
         return 6;
     }
 
-    public static long dec16(Context context, RegisterNames registerName) {
-        context.decrementAndGet(registerName);
+    public static long dec16(Context context, RegisterNames register) {
+        context.decrementAndGet(register);
         context.incrementAndGet(RegisterNames.PC);
         return 6;
     }
 
-    public static long inc8(Context context, RegisterNames registerName) {
-        if (registerName == RegisterNames.HL) { // special case
-            int address = context.get(registerName);
+    public static long inc8(Context context, RegisterNames register) {
+        if (register == RegisterNames.HL) { // special case
+            int address = context.get(register);
             int value = context.getSystemBus().readByteFromMemory(address);
             context.getSystemBus().writeByteToMemory(address, value + 1);
             context.incrementAndGet(RegisterNames.PC);
             return 11;
         }
 
-        context.incrementAndGet(registerName);
+        context.incrementAndGet(register);
         context.incrementAndGet(RegisterNames.PC);
         return 4;
     }
 
-    public static long dec8(Context context, RegisterNames registerName) {
-        if (registerName == RegisterNames.HL) { // special case
-            int address = context.get(registerName);
+    public static long dec8(Context context, RegisterNames register) {
+        if (register == RegisterNames.HL) { // special case
+            int address = context.get(register);
             int value = context.getSystemBus().readByteFromMemory(address);
             context.getSystemBus().writeByteToMemory(address, value - 1);
             context.incrementAndGet(RegisterNames.PC);
             return 11;
         }
 
-        context.decrementAndGet(registerName);
+        context.decrementAndGet(register);
         context.incrementAndGet(RegisterNames.PC);
         return 4;
     }
 
-    public static long ld_8(Context context, RegisterNames registerNames) {
+    public static long ld_8(Context context, RegisterNames register) {
         int pc = context.get(RegisterNames.PC);
         int value = context.getSystemBus().readByteFromMemory(pc + 1);
-        context.set(registerNames, value);
+        context.set(register, value);
         context.set(RegisterNames.PC, pc + 2);
         return 7;
     }
@@ -282,4 +282,34 @@ public class OperationExecutor {
         return result;
     }
 
+    public static long ret_cc(Context context, Flags flagToCheck) {
+        boolean cc = context.get(flagToCheck);
+
+        if (cc) {
+            int sp = context.get(RegisterNames.SP);
+            int jumpAddress = context.getSystemBus().readWordFromMemory(sp);
+            context.set(RegisterNames.PC, jumpAddress);
+            context.set(RegisterNames.SP, sp + 2);
+            return 11;
+        }
+
+        context.incrementAndGet(RegisterNames.PC);
+        return 5;
+    }
+
+    public static long pop(Context context, RegisterNames register) {
+        int sp = context.get(RegisterNames.SP);
+        context.set(register, context.getSystemBus().readWordFromMemory(sp));
+        context.set(RegisterNames.SP, sp + 2);
+        context.incrementAndGet(RegisterNames.PC);
+        return 10;
+    }
+
+    public static long ret(Context context) {
+        int sp = context.get(RegisterNames.SP);
+        int jumpAddress = context.getSystemBus().readWordFromMemory(sp);
+        context.set(RegisterNames.PC, jumpAddress);
+        context.set(RegisterNames.SP, sp + 2);
+        return 10;
+    }
 }

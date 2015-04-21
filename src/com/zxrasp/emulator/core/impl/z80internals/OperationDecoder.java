@@ -154,6 +154,29 @@ public class OperationDecoder {
             case 2:
                 return OperationExecutor.performALUOperation(context, ALUOperations.values()[y], r8.get(z));
             case 3:
+                switch (z) {
+                    case 0:
+                        return OperationExecutor.ret_cc(context, Flags.values()[y]);
+                    case 1:
+                        switch (q) {
+                            case 0:
+                                return OperationExecutor.pop(context, r16b.get(p));
+                            case 1:
+                                switch (p) {
+                                    case 0:
+                                        return OperationExecutor.ret(context);
+                                    case 1:
+                                    case 2:
+                                    case 3:
+                                }
+                        }
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                }
         }
 
         throw  new UnknownOperationException();
