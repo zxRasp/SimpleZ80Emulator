@@ -1,19 +1,15 @@
-import com.zxrasp.emulator.core.impl.SimpleULA;
-import com.zxrasp.emulator.core.impl.Z80;
-import com.zxrasp.emulator.core.impl.z80internals.UnknownOperationException;
+import com.zxrasp.emulator.core.EmulationCore;
+import com.zxrasp.emulator.platform.SwingScreen;
 
 public class Main {
 
-    public static void main(String[] args) {
-        Z80 cpu = new Z80(new SimpleULA());
+    public static final int FRAME_TIME = 1000 / 50;
+    public static final String WINDOW_TITLE = "Simple Z80 Emulator";
 
-        while (true) {
-            try {
-                System.out.println("Perform operation during " + cpu.clock() + " ticks");
-            } catch (UnknownOperationException e) {
-                e.printStackTrace();
-                return;
-            }
-        }
+    public static void main(String[] args) {
+       EmulationCore core = new EmulationCore();
+       core.init(new SwingScreen(WINDOW_TITLE));
+
+       core.doEmulation(FRAME_TIME);
     }
 }

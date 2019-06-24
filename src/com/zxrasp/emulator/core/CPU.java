@@ -1,6 +1,6 @@
 package com.zxrasp.emulator.core;
 
-import com.zxrasp.emulator.core.impl.z80internals.UnknownOperationException;
+import com.zxrasp.emulator.core.z80.z80internals.UnknownOperationException;
 
 public interface CPU {
 
