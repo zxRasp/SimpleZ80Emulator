@@ -4,7 +4,9 @@ import com.zxrasp.emulator.core.Screen;
 import com.zxrasp.emulator.core.SystemBus;
 import com.zxrasp.emulator.core.VideoController;
 
-public class SpectrumVideoController implements VideoController {
+public class SpectrumVideoController implements VideoController, SpectrumScreenMetrics {
+
+    private static final int PIXELS_IN_VERTICAL_BORDER = SpectrumScreenMetrics.PIXEL_PER_LINE * SpectrumScreenMetrics.VERTICAL_BORDER;
 
     public static final int VIDEO_MEMORY_START = 16 * 1024;
     public static final int VIDEO_MEMORY_SIZE =  6 * 1024;
@@ -15,6 +17,7 @@ public class SpectrumVideoController implements VideoController {
     private SystemBus bus;
     private Screen screen;
 
+
     public SpectrumVideoController(SystemBus bus, Screen screen) {
         this.bus = bus;
         this.screen = screen;
@@ -24,44 +27,48 @@ public class SpectrumVideoController implements VideoController {
     public void tick(long ticks) {
         int[] buffer = screen.getScreenBuffer();
 
-        // draw upper border (56 lines)
+        // draw upper border
         int borderColor = getBorderColor(bus.readByteFromPort(BORDER_COLOR_PORT));
         int scr = 0;
-        for(; scr < 56 * 448; scr++) {
+        for(; scr < PIXELS_IN_VERTICAL_BORDER; scr++) {
             buffer[scr] = borderColor;
         }
 
         // draws paper area (192 lines)
-        int pixPtr = VIDEO_MEMORY_START;
-        int atrPtr = ATR_MEMORY_START;
+        for(int line = 0; line < 24; line++) {
+            for (int pixelrow = 0; pixelrow < 8; pixelrow++) {
 
-        for (int j = 0; j < 193; j++) {
-            // left border (48 pix)
-            for (int i = 0; i < 49; i++) {
-                buffer[++scr] = borderColor;
-            }
+                // left border
+                for(int i = 0; i < HORIZONTAL_BORDER; i++) {
+                    buffer[scr++] = borderColor;
+                }
 
-            // middle (256 pix)
-            for (int i = 0; i < 33; i++) {
-                int pixel = bus.readByteFromMemory(pixPtr++);
-                int atr = bus.readByteFromMemory(atrPtr++);
-                buffer[++scr] = calculateScreenColor(pixel, atr, 0x1);
-                buffer[++scr] = calculateScreenColor(pixel, atr, 0x2);
-                buffer[++scr] = calculateScreenColor(pixel, atr, 0x4);
-                buffer[++scr] = calculateScreenColor(pixel, atr, 0x8);
-                buffer[++scr] = calculateScreenColor(pixel, atr, 0x10);
-                buffer[++scr] = calculateScreenColor(pixel, atr, 0x20);
-                buffer[++scr] = calculateScreenColor(pixel, atr, 0x40);
-                buffer[++scr] = calculateScreenColor(pixel, atr, 0x80);
-            }
+                // middle
+                for (int column = 0; column < 32; column++) {
+                    int pixPtr = VIDEO_MEMORY_START | ((line & 0x18) << 11) | (pixelrow << 8) | ((line & 0x7) << 5) | column;
+                    int atrPtr = ATR_MEMORY_START | (line << 5) | column;
 
-            // right border (48 pix)
-            for (int i = 0; i < 49; i++) {
-                buffer[++scr] = borderColor;
+                    int pixel = bus.readByteFromMemory(pixPtr);
+                    int atr = bus.readByteFromMemory(atrPtr);
+
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x1);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x2);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x4);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x8);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x10);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x20);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x40);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x80);
+                }
+
+                // right border
+                for(int i = 0; i < HORIZONTAL_BORDER; i++) {
+                    buffer[scr++] = borderColor;
+                }
             }
         }
 
-        // draw bottom border (56 lines)
+        // draw bottom border
         for (; scr < buffer.length; scr++) {
             buffer[scr] = borderColor;
         }

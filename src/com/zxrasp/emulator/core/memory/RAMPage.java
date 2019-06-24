@@ -2,6 +2,8 @@ package com.zxrasp.emulator.core.memory;
 
 import com.zxrasp.emulator.core.Memory;
 
+import java.util.Random;
+
 public class RAMPage implements Memory {
 
     private final byte[] memory;
@@ -13,6 +15,14 @@ public class RAMPage implements Memory {
     public RAMPage(final byte[] dump) {
         this.memory = new byte[dump.length];
         System.arraycopy(dump, 0, memory, 0, memory.length);
+    }
+
+    public RAMPage(int size, Random rnd) {
+       memory = new byte[size];
+
+       for (int i = 0; i < memory.length; i++) {
+           memory[i] = (byte) (rnd.nextInt() % 255);
+       }
     }
 
     @Override

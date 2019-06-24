@@ -1,33 +1,39 @@
 package com.zxrasp.emulator.platform;
 
 import com.zxrasp.emulator.core.Screen;
+import com.zxrasp.emulator.core.spectrum.SpectrumScreenMetrics;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.MemoryImageSource;
 
-public class SwingScreen extends JFrame implements Screen {
+public class SwingScreen extends JFrame implements Screen, SpectrumScreenMetrics {
 
     private int[] screenBuffer;
     private MemoryImageSource mis;
     private Image image;
 
-    public SwingScreen(String title) throws HeadlessException {
+    private int screenX, screenY;
+
+    public SwingScreen(String title, Dimension windowSize) throws HeadlessException {
         super(title);
 
-        screenBuffer = new int[448 * 312];
-        mis = new MemoryImageSource(448, 312, screenBuffer, 0, 448);
+        screenBuffer = new int[SCAN_LINES * PIXEL_PER_LINE];
+        mis = new MemoryImageSource(PIXEL_PER_LINE, SCAN_LINES, screenBuffer, 0, PIXEL_PER_LINE);
         mis.setAnimated(true);
         image = createImage(mis);
 
-        setSize(800, 600);
+        screenX = (windowSize.width - PIXEL_PER_LINE) / 2;
+        screenY = (windowSize.height - SCAN_LINES) / 2;
+
+        setSize(windowSize.width, windowSize.height);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
     }
 
     @Override
     public void paint(Graphics g) {
-        g.drawImage(image, 176, 144, this);
+        g.drawImage(image, screenX, screenY, this);
     }
 
     @Override
