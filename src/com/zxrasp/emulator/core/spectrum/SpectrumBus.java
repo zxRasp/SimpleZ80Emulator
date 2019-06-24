@@ -29,7 +29,7 @@ public class SpectrumBus implements SystemBus {
 
     @Override
     public int readByteFromPort(int address) {
-        return 3; // todo
+        return 0xFF; // todo
     }
 
     @Override

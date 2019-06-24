@@ -26,14 +26,15 @@ public class SwingScreen extends JFrame implements Screen, SpectrumScreenMetrics
         screenX = (windowSize.width - PIXEL_PER_LINE) / 2;
         screenY = (windowSize.height - SCAN_LINES) / 2;
 
-        setSize(windowSize.width, windowSize.height);
+        setSize(PIXEL_PER_LINE * 2, SCAN_LINES * 2);
+        setMinimumSize(new Dimension(PIXEL_PER_LINE, SCAN_LINES));
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
     }
 
     @Override
     public void paint(Graphics g) {
-        g.drawImage(image, screenX, screenY, this);
+        g.drawImage(image, 0, 0, getWidth(), getHeight(), this);
     }
 
     @Override

@@ -8,14 +8,20 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
 
     private static final int PIXELS_IN_VERTICAL_BORDER = SpectrumScreenMetrics.PIXEL_PER_LINE * SpectrumScreenMetrics.VERTICAL_BORDER;
 
-    public static final int VIDEO_MEMORY_START = 16 * 1024;
-    public static final int VIDEO_MEMORY_SIZE =  6 * 1024;
-    public static final int ATR_MEMORY_START =   VIDEO_MEMORY_START + VIDEO_MEMORY_SIZE;
-    public static final int ATR_MEMORY_SIZE = 32 * 24;
-    public static final int BORDER_COLOR_PORT = 0xFE;
+    private static final int VIDEO_MEMORY_START = 16 * 1024;
+    private static final int VIDEO_MEMORY_SIZE =  6 * 1024;
+    private static final int ATR_MEMORY_START =   VIDEO_MEMORY_START + VIDEO_MEMORY_SIZE;
+    private static final int BORDER_COLOR_PORT = 0xFE;
+
+    // colors
+    private static final int BRIGHT_COLOR = 255;
+    private static final int NORMAL_COLOR = 205;
 
     private SystemBus bus;
     private Screen screen;
+
+    private int frameCount = 0;
+    private boolean isInverse = false;
 
 
     public SpectrumVideoController(SystemBus bus, Screen screen) {
@@ -25,6 +31,14 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
 
     @Override
     public void drawFrame(long ticks) {
+
+        ++frameCount;
+
+        if (frameCount > 16) {
+            isInverse = !isInverse;
+            frameCount = 0;
+        }
+
         int[] buffer = screen.getScreenBuffer();
 
         // draw upper border
@@ -35,35 +49,37 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
         }
 
         // draws paper area (192 lines)
-        for(int line = 0; line < 24; line++) {
-            for (int pixelrow = 0; pixelrow < 8; pixelrow++) {
+        for (int t = 0; t < 3; t++) {
+            for (int s = 0; s < 8; s++) {
+                for (int c = 0; c < 8; c++) {
 
-                // left border
-                for(int i = 0; i < HORIZONTAL_BORDER; i++) {
-                    buffer[scr++] = borderColor;
-                }
+                    // left border
+                    for (int i = 0; i < HORIZONTAL_BORDER; i++) {
+                        buffer[scr++] = borderColor;
+                    }
 
-                // middle
-                for (int column = 0; column < 32; column++) {
-                    int pixPtr = VIDEO_MEMORY_START | ((line & 0x18) << 11) | ((pixelrow & 0x7) << 8) | ((line & 0x7) << 5) | column;
-                    int atrPtr = ATR_MEMORY_START | (line << 5) | column;
+                    // middle
+                    for (int h = 0; h < 32; h++) {
+                        int pixPtr = VIDEO_MEMORY_START | (t << 11) | (c << 8) | (s << 5) | h;
+                        int atrPtr = ATR_MEMORY_START | (t << 8) | (pixPtr & 0xFF) ;
 
-                    int pixel = bus.readByteFromMemory(pixPtr);
-                    int atr = bus.readByteFromMemory(atrPtr);
+                        int pixel = bus.readByteFromMemory(pixPtr);
+                        int atr = bus.readByteFromMemory(atrPtr);
 
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x80);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x40);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x20);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x10);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x8);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x4);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x2);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x1);
-                }
+                        buffer[scr++] = calculateScreenColor(pixel, atr, 0x80);
+                        buffer[scr++] = calculateScreenColor(pixel, atr, 0x40);
+                        buffer[scr++] = calculateScreenColor(pixel, atr, 0x20);
+                        buffer[scr++] = calculateScreenColor(pixel, atr, 0x10);
+                        buffer[scr++] = calculateScreenColor(pixel, atr, 0x8);
+                        buffer[scr++] = calculateScreenColor(pixel, atr, 0x4);
+                        buffer[scr++] = calculateScreenColor(pixel, atr, 0x2);
+                        buffer[scr++] = calculateScreenColor(pixel, atr, 0x1);
+                    }
 
-                // right border
-                for(int i = 0; i < HORIZONTAL_BORDER; i++) {
-                    buffer[scr++] = borderColor;
+                    // right border
+                    for (int i = 0; i < HORIZONTAL_BORDER; i++) {
+                        buffer[scr++] = borderColor;
+                    }
                 }
             }
         }
@@ -77,37 +93,38 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
     }
 
     private int calculateScreenColor(int pixel, int atr, int mask) {
-        boolean isPaper = ((pixel & mask) == 0);
+        boolean isInk = ((pixel & mask) != 0);
+        boolean isFlash = ((atr & 0x80) != 0);
 
-        if (isPaper) {
-            return getPaperColor(atr);
+        if (isInk) {
+            return (isFlash && isInverse) ? getPaperColor(atr) : getInkColor(atr);
         } else {
-            return getInkColor(atr);
+            return (isFlash && isInverse) ? getInkColor(atr) : getPaperColor(atr);
         }
     }
 
     private int getInkColor(int atr) {
         boolean isBright = ((atr & 0x40) != 0);
-        int r = ((atr & 0x20) == 0 ? 0 : isBright ? 255 : 128);
-        int g = ((atr & 0x10) == 0 ? 0 : isBright ? 255 : 128);
-        int b = ((atr & 0x8) == 0 ? 0 : isBright ? 255 : 128);
+        int g = ((atr & 0x4) == 0 ? 0 : isBright ? BRIGHT_COLOR : NORMAL_COLOR);
+        int r = ((atr & 0x2) == 0 ? 0 : isBright ? BRIGHT_COLOR : NORMAL_COLOR);
+        int b = ((atr & 0x1) == 0 ? 0 : isBright ? BRIGHT_COLOR : NORMAL_COLOR);
 
         return (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
 
     private int getPaperColor(int atr) {
         boolean isBright = ((atr & 0x40) != 0);
-        int r = ((atr & 0x4) == 0 ? 0 : isBright ? 255 : 128);
-        int g = ((atr & 0x2) == 0 ? 0 : isBright ? 255 : 128);
-        int b = ((atr & 0x1) == 0 ? 0 : isBright ? 255 : 128);
+        int g = ((atr & 0x20) == 0 ? 0 : isBright ? BRIGHT_COLOR : NORMAL_COLOR);
+        int r = ((atr & 0x10) == 0 ? 0 : isBright ? BRIGHT_COLOR : NORMAL_COLOR);
+        int b = ((atr & 0x8)  == 0 ? 0 : isBright ? BRIGHT_COLOR : NORMAL_COLOR);
 
         return (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
 
     private int getBorderColor(int portValue) {
-        int r = ((portValue & 0x4) == 0 ? 0 : 128);
-        int g = ((portValue & 0x2) == 0 ? 0 : 128);
-        int b = ((portValue & 0x1) == 0 ? 0 : 128);
+        int g = ((portValue & 0x4) == 0 ? 0 : NORMAL_COLOR);
+        int r = ((portValue & 0x2) == 0 ? 0 : NORMAL_COLOR);
+        int b = ((portValue & 0x1) == 0 ? 0 : NORMAL_COLOR);
 
         return (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
