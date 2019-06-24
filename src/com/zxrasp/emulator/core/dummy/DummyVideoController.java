@@ -16,7 +16,7 @@ public class DummyVideoController implements VideoController {
     }
 
     @Override
-    public void tick(long ticks) {
+    public void drawFrame(long ticks) {
         int[] screenBuffer = screen.getScreenBuffer();
 
         for (int i = 0; i < screenBuffer.length; i++) {

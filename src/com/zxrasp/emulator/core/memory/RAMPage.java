@@ -18,11 +18,11 @@ public class RAMPage implements Memory {
     }
 
     public RAMPage(int size, Random rnd) {
-       memory = new byte[size];
+        memory = new byte[size];
 
-       for (int i = 0; i < memory.length; i++) {
-           memory[i] = (byte) (rnd.nextInt() % 255);
-       }
+        for (int i = 0; i < memory.length; i++) {
+            memory[i] = (byte) (rnd.nextInt() % 255);
+        }
     }
 
     @Override
@@ -33,16 +33,5 @@ public class RAMPage implements Memory {
     @Override
     public int readByteFromMemory(int address) {
         return memory[address];
-    }
-
-    @Override
-    public void writeWordToMemory(int address, int data) {
-        memory[address] = (byte) (data & 0xFF);
-        memory[address + 1] = (byte) ((data >> 8) & 0xFF);
-    }
-
-    @Override
-    public int readWordFromMemory(int address) {
-        return (memory[address + 1] << 8) | memory[address];
     }
 }

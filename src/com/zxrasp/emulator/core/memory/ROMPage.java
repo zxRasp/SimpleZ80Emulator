@@ -4,6 +4,7 @@ import com.zxrasp.emulator.core.Memory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class ROMPage implements Memory {
 
@@ -11,6 +12,7 @@ public class ROMPage implements Memory {
 
     public ROMPage(int size) {
         this.memory = new byte[size];
+        Arrays.fill(memory, (byte) 0xFF);
     }
 
     public ROMPage(FileInputStream inputStream, int size) {
@@ -33,13 +35,4 @@ public class ROMPage implements Memory {
         return memory[address];
     }
 
-    @Override
-    public void writeWordToMemory(int address, int data) {
-        // nothing to do
-    }
-
-    @Override
-    public int readWordFromMemory(int address) {
-        return (memory[address+1] << 8) | memory[address];
-    }
 }

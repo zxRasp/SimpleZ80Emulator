@@ -24,7 +24,7 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
     }
 
     @Override
-    public void tick(long ticks) {
+    public void drawFrame(long ticks) {
         int[] buffer = screen.getScreenBuffer();
 
         // draw upper border
@@ -45,20 +45,20 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
 
                 // middle
                 for (int column = 0; column < 32; column++) {
-                    int pixPtr = VIDEO_MEMORY_START | ((line & 0x18) << 11) | (pixelrow << 8) | ((line & 0x7) << 5) | column;
+                    int pixPtr = VIDEO_MEMORY_START | ((line & 0x18) << 11) | ((pixelrow & 0x7) << 8) | ((line & 0x7) << 5) | column;
                     int atrPtr = ATR_MEMORY_START | (line << 5) | column;
 
                     int pixel = bus.readByteFromMemory(pixPtr);
                     int atr = bus.readByteFromMemory(atrPtr);
 
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x1);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x2);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x4);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x8);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x10);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x20);
-                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x40);
                     buffer[scr++] = calculateScreenColor(pixel, atr, 0x80);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x40);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x20);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x10);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x8);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x4);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x2);
+                    buffer[scr++] = calculateScreenColor(pixel, atr, 0x1);
                 }
 
                 // right border

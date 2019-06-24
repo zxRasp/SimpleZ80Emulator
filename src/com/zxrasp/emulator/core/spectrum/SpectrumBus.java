@@ -46,13 +46,12 @@ public class SpectrumBus implements SystemBus {
 
     @Override
     public void writeWordToMemory(int address, int data) {
-        int page = (address >> 14) & 0x3;
-        pages[page].writeWordToMemory(address & 0x3FFF, data);
+        writeByteToMemory(address, data & 0xFF);
+        writeByteToMemory(address + 1, data >> 8);
     }
 
     @Override
     public int readWordFromMemory(int address) {
-        int page = (address >> 14) & 0x3;
-        return pages[page].readWordFromMemory(address & 0x3FFF);
+        return (readByteFromMemory(address) << 8) | readByteFromMemory(address + 1);
     }
 }

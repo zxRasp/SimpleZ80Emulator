@@ -354,7 +354,8 @@ public class OperationExecutor {
     }
 
     public long rst(int n) {
-        bus.writeWordToMemory(context.decrementAndGet(RegisterNames.SP), context.get(RegisterNames.PC) + 1); //fixme: SP = SP - 2
+        bus.writeWordToMemory(context.decrementAndGet(RegisterNames.SP), context.get(RegisterNames.PC) + 1);
+        context.decrementAndGet(RegisterNames.SP);
         context.set(RegisterNames.PC, n);
         return 11;
     }
