@@ -1,24 +1,32 @@
 package com.zxrasp.emulator.core.spectrum;
 
-import com.zxrasp.emulator.core.Memory;
-import com.zxrasp.emulator.core.SystemBus;
+import com.zxrasp.emulator.core.*;
 import com.zxrasp.emulator.core.memory.RAMPage;
 import com.zxrasp.emulator.core.memory.ROMLoadingException;
 import com.zxrasp.emulator.core.memory.ROMPage;
+import com.zxrasp.emulator.core.z80.Z80;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.Random;
 
-public class SpectrumBus implements SystemBus {
+public class SpectrumBus extends AbstractSystem {
 
     private static final int DEFAULT_PAGE_SIZE = 16384;
+
+    private static final int CLOCKS_PER_FRAME = 69000;
+    private static final int FRAME_TIME = 1000 / 50;
 
     private Memory[] pages;
 
     private int portFE;
+    private CPU cpu;
+    private VideoController videoController;
 
-    public SpectrumBus() {
+    public SpectrumBus(Screen screen) {
+        cpu = new Z80(this);
+        videoController = new SpectrumVideoController(this, screen);
+
         pages = new Memory[4];
 
         try {
@@ -50,6 +58,32 @@ public class SpectrumBus implements SystemBus {
     }
 
     @Override
+    public void run() {
+        while (true) {
+            long start = System.currentTimeMillis();
+
+            long clock = 0;
+            while (clock < CLOCKS_PER_FRAME) {
+                clock += cpu.clock();
+            }
+
+            videoController.drawFrame(0);
+
+            cpu.interrupt(true);
+
+            long actualFrameTime = System.currentTimeMillis() - start;
+
+            if (actualFrameTime < FRAME_TIME) {
+                try {
+                    Thread.sleep(FRAME_TIME - actualFrameTime);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    @Override
     public void writeByteToMemory(int address, int data) {
         int page = (address >> 14) & 0x3;
         pages[page].writeByteToMemory(address & 0x3FFF, data);
@@ -59,16 +93,5 @@ public class SpectrumBus implements SystemBus {
     public int readByteFromMemory(int address) {
         int page = (address >> 14) & 0x3;
         return pages[page].readByteFromMemory(address & 0x3FFF);
-    }
-
-    @Override
-    public void writeWordToMemory(int address, int data) {
-        writeByteToMemory(address, data & 0xFF);
-        writeByteToMemory(address + 1, data >> 8);
-    }
-
-    @Override
-    public int readWordFromMemory(int address) {
-        return (readByteFromMemory(address) << 8) | readByteFromMemory(address + 1);
     }
 }

@@ -6,11 +6,13 @@ import com.zxrasp.emulator.core.z80.z80internals.*;
 
 public class Z80 implements CPU {
 
-    private Context context;
+    protected Context context;
+    protected SystemBus bus;
 
     private OperationDecoder decoder;
 
     public Z80(SystemBus bus) {
+        this.bus = bus;
         this.context = new Z80Context();
         this.decoder = new OperationDecoder(context, bus);
     }

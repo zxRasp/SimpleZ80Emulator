@@ -9,4 +9,6 @@ public interface SystemBus extends Memory {
     void writeWordToMemory(int address, int data);
 
     int readWordFromMemory(int address);
+
+    void run();
 }

@@ -1,6 +1,7 @@
 *.class
 *.scr
 *.rom
+*.com
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/

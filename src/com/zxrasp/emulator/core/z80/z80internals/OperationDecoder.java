@@ -184,18 +184,19 @@ public class OperationDecoder {
                     case 2:
                         return executor.jp_cc(Flags.values()[y]);
                     case 3:
-                    case 4:
-                    case 5:
                     case 6:
+                    case 5:
+                    case 4:
+                        throw  new UnknownOperationException(String.format("Unknown opcode: %x", opcode));
                     case 7:
                         return executor.rst(y << 3);
                 }
         }
 
-        throw  new UnknownOperationException();
+        throw  new UnknownOperationException(String.format("Unknown opcode: %x", opcode));
     }
 
     private long resolveExtendedOperation(int prefix, int opcode) throws UnknownOperationException {
-        throw new UnknownOperationException();
+        throw new UnknownOperationException(String.format("Unknown opcode: %x %x", prefix, opcode));
     }
 }
