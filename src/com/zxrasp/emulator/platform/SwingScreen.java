@@ -16,7 +16,7 @@ public class SwingScreen extends JFrame implements Screen {
         super(title);
 
         screenBuffer = new int[448 * 312];
-        mis = new MemoryImageSource(448, 312, screenBuffer, 0, 0);
+        mis = new MemoryImageSource(448, 312, screenBuffer, 0, 448);
         mis.setAnimated(true);
         image = createImage(mis);
 

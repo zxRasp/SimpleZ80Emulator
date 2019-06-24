@@ -2,7 +2,11 @@ package com.zxrasp.emulator.core.spectrum;
 
 import com.zxrasp.emulator.core.SystemBus;
 
+import java.util.Random;
+
 public class SpectrumBus implements SystemBus {
+
+    private Random rnd = new Random();
 
     @Override
     public void writeByteToPort(int address, int data) {

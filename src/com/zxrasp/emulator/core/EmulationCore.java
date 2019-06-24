@@ -1,7 +1,9 @@
 package com.zxrasp.emulator.core;
 
+import com.zxrasp.emulator.core.dummy.DummyCPU;
 import com.zxrasp.emulator.core.dummy.DummyVideoController;
 import com.zxrasp.emulator.core.spectrum.SpectrumBus;
+import com.zxrasp.emulator.core.spectrum.SpectrumVideoController;
 import com.zxrasp.emulator.core.z80.Z80;
 
 public class EmulationCore {
@@ -12,8 +14,8 @@ public class EmulationCore {
 
     public void init(Screen screen) {
         systemBus = new SpectrumBus();
-        cpu = new Z80(systemBus);
-        videoController = new DummyVideoController(screen);
+        cpu = new DummyCPU();
+        videoController = new SpectrumVideoController(systemBus, screen);
     }
 
     public void doEmulation(long frameTime) {
