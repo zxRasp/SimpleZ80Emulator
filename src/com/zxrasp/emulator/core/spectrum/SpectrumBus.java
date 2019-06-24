@@ -2,34 +2,51 @@ package com.zxrasp.emulator.core.spectrum;
 
 import com.zxrasp.emulator.core.Memory;
 import com.zxrasp.emulator.core.SystemBus;
-import com.zxrasp.emulator.core.dummy.DummyMemory;
 import com.zxrasp.emulator.core.memory.RAMPage;
+import com.zxrasp.emulator.core.memory.ROMLoadingException;
 import com.zxrasp.emulator.core.memory.ROMPage;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.Random;
 
 public class SpectrumBus implements SystemBus {
 
     private static final int DEFAULT_PAGE_SIZE = 16384;
 
-    Memory[] pages;
+    private Memory[] pages;
+
+    private int portFE;
 
     public SpectrumBus() {
         pages = new Memory[4];
 
-        pages[0] = new ROMPage(DEFAULT_PAGE_SIZE);
+        try {
+            pages[0] = new ROMPage(new FileInputStream("test.rom"), DEFAULT_PAGE_SIZE);
+        } catch (FileNotFoundException e) {
+            throw new ROMLoadingException();
+        }
         pages[1] = new RAMPage(DEFAULT_PAGE_SIZE, new Random());
-        pages[2] = pages[3] = new DummyMemory();
+        pages[2] = new RAMPage(DEFAULT_PAGE_SIZE, new Random());
+        pages[3] = new RAMPage(DEFAULT_PAGE_SIZE, new Random());
+
+        portFE = 0xFF;
     }
 
     @Override
     public void writeByteToPort(int address, int data) {
-        // todo
+        if ((address & 0x1) == 0) {
+            portFE = data & 0xFF;
+        }
     }
 
     @Override
     public int readByteFromPort(int address) {
-        return 0xFF; // todo
+        if ((address & 0x1) == 0) {
+            return portFE & 0xFF;
+        }
+
+        return 0xFF;
     }
 
     @Override
