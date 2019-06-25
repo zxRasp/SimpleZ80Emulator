@@ -1,5 +1,7 @@
 package com.zxrasp.emulator.core.z80.z80internals;
 
+import com.zxrasp.emulator.core.EmulationException;
+
 public class Z80Context implements Context {
 
     private int af;
@@ -131,7 +133,7 @@ public class Z80Context implements Context {
             case IY:
                 return iy;
             default:
-                return 0;
+                throw new EmulationException("Unknown register: " + register);
         }
     }
 

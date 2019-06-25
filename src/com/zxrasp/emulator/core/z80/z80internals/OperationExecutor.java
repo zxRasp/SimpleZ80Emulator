@@ -1,5 +1,6 @@
 package com.zxrasp.emulator.core.z80.z80internals;
 
+import com.zxrasp.emulator.core.EmulationException;
 import com.zxrasp.emulator.core.SystemBus;
 
 import static com.zxrasp.emulator.core.z80.z80internals.RegisterNames.*;
@@ -201,42 +202,42 @@ public class OperationExecutor {
 
     public long rlca() {
         // todo
-        return 4;
+        throw new EmulationException("Not implemented yet");
     }
 
     public long rrca() {
         // todo
-        return 0;
+        throw new EmulationException("Not implemented yet");
     }
 
     public long rla() {
         // todo
-        return 0;
+        throw new EmulationException("Not implemented yet");
     }
 
     public long rra() {
         // todo
-        return 0;
+        throw new EmulationException("Not implemented yet");
     }
 
     public long daa() {
         // todo
-        return 0;
+        throw new EmulationException("Not implemented yet");
     }
 
     public static long cpl() {
         // todo
-        return 0;
+        throw new EmulationException("Not implemented yet");
     }
 
     public long scf() {
         // todo
-        return 0;
+        throw new EmulationException("Not implemented yet");
     }
 
     public long ccf() {
         // todo
-        return 0;
+        throw new EmulationException("Not implemented yet");
     }
 
     public long ld_r8_r8(RegisterNames dst, RegisterNames src) {
@@ -286,8 +287,7 @@ public class OperationExecutor {
                 context.set(RegisterNames.A, acc | value);
                 break;
             case CP:
-                // todo
-                break;
+                throw new EmulationException("Not implemented yet");
         }
 
         context.incrementAndGet(PC);
@@ -340,9 +340,7 @@ public class OperationExecutor {
     }
 
     public long exx() {
-        // todo
-        context.incrementAndGet(PC);
-        return 4;
+        throw new EmulationException("Not implemented yet");
     }
 
     public long jp_hl() {
@@ -356,8 +354,8 @@ public class OperationExecutor {
         return 6;
     }
 
-    public long jp_cc(Flags flags) {
-        boolean cc = context.get(flags);
+    public long jp_cc(Flags flag) {
+        boolean cc = context.get(flag);
         int pc = context.get(PC);
 
         if (cc) {
@@ -390,4 +388,48 @@ public class OperationExecutor {
         context.incrementAndGet(PC);
         return 4;
     }
+
+    public long blockOperation(BlockOperations operation) {
+        long result;
+
+        switch (operation){
+            case LDI:
+                result = ldi();
+                break;
+            case LDIR:
+                result = ldir();
+                break;
+            default:
+                throw new EmulationException("Not implemented yet");
+        }
+
+        context.incrementAndGet(PC);
+        return result;
+    }
+
+    private long ldi() {
+        int de = context.get(DE);
+        int hl = context.get(HL);
+
+        int val = bus.readByteFromMemory(hl);
+        bus.writeByteToMemory(de, val);
+
+        context.set(DE, de + 1);
+        context.set(HL, hl + 1);
+        context.decrementAndGet(BC);
+
+        // todo: set flags
+        return 16;
+    }
+
+    private long ldir() {
+        int result = 0;
+        do {
+            result += ldi();
+        } while (context.get(BC) != 0);
+
+        return result;
+    }
+
+
 }

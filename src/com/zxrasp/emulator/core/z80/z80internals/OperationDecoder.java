@@ -7,9 +7,9 @@ import java.util.Map;
 
 public class OperationDecoder {
 
-    private static final Map<Integer, RegisterNames> r8 = new HashMap<Integer, RegisterNames>();
-    private static final Map<Integer, RegisterNames> r16a = new HashMap<Integer, RegisterNames>();
-    private static final Map<Integer, RegisterNames> r16b = new HashMap<Integer, RegisterNames>();
+    private static final Map<Integer, RegisterNames> r8 = new HashMap<>();
+    private static final Map<Integer, RegisterNames> r16a = new HashMap<>();
+    private static final Map<Integer, RegisterNames> r16b = new HashMap<>();
 
     private static int totalTicks;
 
@@ -50,7 +50,7 @@ public class OperationDecoder {
         int pc = context.get(RegisterNames.PC);
         int opcode = bus.readByteFromMemory(pc);
 
-        //System.out.printf("PC: %x, opcode: %x\n", pc, opcode);
+        System.out.printf("PC: %X, opcode: %X\n", pc, opcode);
 
         long result;
 
@@ -212,6 +212,31 @@ public class OperationDecoder {
     }
 
     private long resolveExtendedOperation(int prefix, int opcode) throws UnknownOperationException {
+        switch (prefix) {
+            case 0xED:
+                return decodeEDOperation(opcode);
+        }
+
         throw new UnknownOperationException(String.format("Unknown opcode: %x %x", prefix, opcode), context);
+    }
+
+    private long decodeEDOperation(int opcode) {
+        int x = (opcode >> 6) & 3;
+        int y = (opcode >> 3) & 7;
+        int z = opcode & 7;
+
+        switch (x) {
+            case 0:
+            case 3:
+                throw new InvalidOperationException(opcode);
+            case 2:
+                if (y >= 4 && z <= 3) {
+                    return executor.blockOperation(BlockOperationsDecoder.decodeBlockOperation(y, z));
+                }
+
+                throw new InvalidOperationException(opcode);
+        }
+
+        throw new UnknownOperationException(String.format("Unknown opcode: %x %x", opcode), context);
     }
 }
