@@ -33,6 +33,9 @@ public class TestMachine extends AbstractSystem {
 
     @Override
     public int readByteFromMemory(int address) {
+        if (address == 0x5) {
+            return 0xC9;
+        }
         return page.readByteFromMemory(address);
     }
 

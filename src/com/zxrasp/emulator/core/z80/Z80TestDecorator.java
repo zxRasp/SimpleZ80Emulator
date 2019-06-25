@@ -17,7 +17,6 @@ public class Z80TestDecorator extends Z80 {
     public long clock() throws UnknownOperationException {
         if (context.get(RegisterNames.PC) == 0x5) {
             handleSystemRequest();
-            return 0;
         }
 
         return super.clock();

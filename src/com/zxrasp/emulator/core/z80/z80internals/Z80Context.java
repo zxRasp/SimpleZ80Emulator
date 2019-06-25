@@ -2,8 +2,6 @@ package com.zxrasp.emulator.core.z80.z80internals;
 
 public class Z80Context implements Context {
 
-
-
     private int af;
     private int bc;
     private int de;
@@ -172,5 +170,13 @@ public class Z80Context implements Context {
 
     private int getLo8bit(int value) {
         return value & 0xFF;
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "pc=" + pc +
+                ", sp=" + sp +
+                '}';
     }
 }

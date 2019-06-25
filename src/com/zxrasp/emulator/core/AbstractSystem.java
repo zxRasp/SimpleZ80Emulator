@@ -20,6 +20,6 @@ public abstract class AbstractSystem implements SystemBus {
 
     @Override
     public int readWordFromMemory(int address) {
-        return (readByteFromMemory(address) << 8) | readByteFromMemory(address + 1);
+        return (readByteFromMemory(address + 1) << 8) | readByteFromMemory(address);
     }
 }
