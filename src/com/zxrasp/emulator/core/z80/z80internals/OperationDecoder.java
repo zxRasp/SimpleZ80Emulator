@@ -50,7 +50,7 @@ public class OperationDecoder {
         int pc = context.get(RegisterNames.PC);
         int opcode = bus.readByteFromMemory(pc);
 
-        System.out.printf("PC: %X, opcode: %X\n", pc, opcode);
+        //System.out.printf("PC: %X, opcode: %X\n", pc, opcode);
 
         long result;
 
@@ -90,7 +90,7 @@ public class OperationDecoder {
                             case 3:
                                 return executor.jr();
                             default:
-                                return executor.jr_cc(Flags.values()[y - 4]);
+                                return executor.jr_cc(Conditions.values()[y - 4]);
                         }
                     case 1:
                         switch(q){
@@ -164,7 +164,7 @@ public class OperationDecoder {
             case 3:
                 switch (z) {
                     case 0:
-                        return executor.ret_cc(Flags.values()[y]);
+                        return executor.ret_cc(Conditions.values()[y]);
                     case 1:
                         switch (q) {
                             case 0:
@@ -182,7 +182,7 @@ public class OperationDecoder {
                                 }
                         }
                     case 2:
-                        return executor.jp_cc(Flags.values()[y]);
+                        return executor.jp_cc(Conditions.values()[y]);
                     case 3:
                         switch (y) {
                             case 0:
@@ -202,7 +202,7 @@ public class OperationDecoder {
                                 return executor.call_nn();
                         }
                     case 6:
-                        throw  new UnknownOperationException(String.format("Unknown opcode: %x", opcode), context);
+                        return executor.performALUOperation(ALUOperations.values()[y]);
                     case 7:
                         return executor.rst(y << 3);
                 }

@@ -1,56 +1,61 @@
 package com.zxrasp.emulator.core.z80.z80internals;
 
 public enum Flags {
-    NZ {
-        @Override
-        public int getMask() {
-            return 0;
-        }
-    },
-    Z {
-        @Override
-        public int getMask() {
-            return 0;
-        }
-    },
-    NC {
-        @Override
-        public int getMask() {
-            return 0;
-        }
-    },
     C {
         @Override
         public int getMask() {
-            return 0;
-        }
-    },
-    PO {
-        @Override
-        public int getMask() {
-            return 0;
+            return 0x1;
         }
     },
 
-    PE {
+    N {
         @Override
         public int getMask() {
-            return 0;
+            return 0x2;
         }
     },
-    P {
+
+    PV {
         @Override
         public int getMask() {
-            return 0;
+            return 0x4;
         }
     },
-    M {
+
+    F3 {
         @Override
         public int getMask() {
-            return 0;
+            return 0x8;
+        }
+    },
+
+    H {
+        @Override
+        public int getMask() {
+            return 0x10;
+        }
+    },
+
+    F5 {
+        @Override
+        public int getMask() {
+            return 0x20;
+        }
+    },
+
+    Z {
+        @Override
+        public int getMask() {
+            return 0x40;
+        }
+    },
+
+    S {
+        @Override
+        public int getMask() {
+            return 0x80;
         }
     };
 
     public abstract int getMask();
-
 }

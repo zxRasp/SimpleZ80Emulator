@@ -54,8 +54,8 @@ public class OperationExecutor {
         return OPERATION_DECODE_COST + JUMP_TIME + 3; // ??
     }
 
-    public long jr_cc(Flags flagToCheck) {
-        boolean cc = context.get(flagToCheck);
+    public long jr_cc(Conditions condition) {
+        boolean cc = checkCondition(condition);
         int pc = context.get(PC);
 
         if (cc) {
@@ -66,6 +66,10 @@ public class OperationExecutor {
 
         context.set(PC, pc + 2);
         return 7;
+    }
+
+    private boolean checkCondition(Conditions condition) {
+        return context.get(condition.flagToCheck()) == condition.expectedValue();
     }
 
     public long ld_16(RegisterNames register) {
@@ -201,8 +205,16 @@ public class OperationExecutor {
     }
 
     public long rlca() {
-        // todo
-        throw new EmulationException("Not implemented yet");
+        int a = context.get(A);
+        int c = a & 0x80;
+        a <<= 1;
+        a |= c;
+        context.set(A, a);
+
+        // todo: set c to CARRY flag
+
+        context.incrementAndGet(PC);
+        return 4;
     }
 
     public long rrca() {
@@ -251,9 +263,10 @@ public class OperationExecutor {
         return 4;
     }
 
-    public long performALUOperation(ALUOperations operation, RegisterNames register) {
+    public long performALUOperation(ALUOperations operation, RegisterNames register){
         int value;
         int result;
+
         if (register == RegisterNames.HL) {
             value = bus.readByteFromMemory(context.get(RegisterNames.HL));
             result = 7;
@@ -262,40 +275,74 @@ public class OperationExecutor {
             result = 4;
         }
 
-        int acc = context.get(RegisterNames.A);
-
-        switch (operation) {
-            case ADD_A:
-                context.set(RegisterNames.A, acc + value);
-                break;
-            case ADC_A:
-                context.set(RegisterNames.A, acc + value + (context.get(Flags.C) ? 1 : 0));
-                break;
-            case SUB:
-                context.set(RegisterNames.A, acc - value);
-                break;
-            case SUBC_A:
-                context.set(RegisterNames.A, acc - value - (context.get(Flags.C) ? 1 : 0));
-                break;
-            case AND:
-                context.set(RegisterNames.A, acc & value);
-                break;
-            case XOR:
-                context.set(RegisterNames.A, acc ^ value);
-                break;
-            case OR:
-                context.set(RegisterNames.A, acc | value);
-                break;
-            case CP:
-                throw new EmulationException("Not implemented yet");
-        }
-
+        performALUOperation(operation, value);
         context.incrementAndGet(PC);
+
         return result;
     }
 
-    public long ret_cc(Flags flagToCheck) {
-        boolean cc = context.get(flagToCheck);
+    public long performALUOperation(ALUOperations operation) {
+        int pc = context.get(PC);
+        int value = bus.readByteFromMemory(pc + 1);
+
+        performALUOperation(operation, value);
+        context.set(PC, pc + 2);
+
+        return 7;
+    }
+
+    private void performALUOperation(ALUOperations operation, int value) {
+        int acc = context.get(RegisterNames.A);
+        int result;
+
+        switch (operation) {
+            case ADD_A:
+                result = acc + value;
+                setALUFlags(result);
+                context.set(RegisterNames.A, result);
+                break;
+            case ADC_A:
+                result = acc + value + (context.get(Flags.C) ? 1 : 0);
+                setALUFlags(result);
+                context.set(RegisterNames.A, result);
+                break;
+            case SUB:
+                result = acc - value;
+                setALUFlags(result);
+                context.set(RegisterNames.A, result);
+                break;
+            case SUBC_A:
+                result = acc - value - (context.get(Flags.C) ? 1 : 0);
+                setALUFlags(result);
+                context.set(RegisterNames.A, result);
+                break;
+            case AND:
+                result = acc & value;
+                setALUFlags(result);
+                context.set(RegisterNames.A, result);
+                break;
+            case XOR:
+                result = acc ^ value;
+                setALUFlags(result);
+                context.set(RegisterNames.A, result);
+                break;
+            case OR:
+                result = acc | value;
+                setALUFlags(result);
+                context.set(RegisterNames.A, result);
+                break;
+            case CP:
+                setALUFlags(acc - value);
+        }
+    }
+
+    private void setALUFlags(int operationResult) {
+        context.set(Flags.Z, operationResult == 0);
+
+    }
+
+    public long ret_cc(Conditions condition) {
+        boolean cc = checkCondition(condition);
 
         if (cc) {
             return ret() + 1;
@@ -354,8 +401,8 @@ public class OperationExecutor {
         return 6;
     }
 
-    public long jp_cc(Flags flag) {
-        boolean cc = context.get(flag);
+    public long jp_cc(Conditions condition) {
+        boolean cc = checkCondition(condition);
         int pc = context.get(PC);
 
         if (cc) {
