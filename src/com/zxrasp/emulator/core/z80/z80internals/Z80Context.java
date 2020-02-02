@@ -2,6 +2,8 @@ package com.zxrasp.emulator.core.z80.z80internals;
 
 import com.zxrasp.emulator.core.EmulationException;
 
+import static com.zxrasp.emulator.core.z80.z80internals.InterruptMode.IM_0;
+
 public class Z80Context implements Context {
 
     public enum HLRegisterMode {
@@ -22,6 +24,7 @@ public class Z80Context implements Context {
     private int iy;
     private int ir;
     private boolean iff1, iff2;
+    private InterruptMode interruptMode;
 
     private HLRegisterMode hlRegisterMode;
     private boolean halted;
@@ -39,6 +42,7 @@ public class Z80Context implements Context {
         iff1 = iff2 = false;
         halted = false;
         hlRegisterMode = HLRegisterMode.HL;
+        interruptMode = IM_0;
     }
 
     @Override
@@ -93,11 +97,20 @@ public class Z80Context implements Context {
             case BC:
                 bc = getLo16bit(value);
                 break;
+            case BC_:
+                bc_ = getLo16bit(value);
+                break;
             case DE:
                 de = getLo16bit(value);
                 break;
+            case DE_:
+                de_ = getLo16bit(value);
+                break;
             case HL:
-                hl = getLo16bit(value);
+                setHL(value);
+                break;
+            case HL_:
+                hl_ = getLo16bit(value);
                 break;
             case PC:
                 pc = getLo16bit(value);
@@ -153,10 +166,16 @@ public class Z80Context implements Context {
                 return af_;
             case BC:
                 return bc;
+            case BC_:
+                return bc_;
             case DE:
                 return de;
+            case DE_:
+                return de_;
             case HL:
                 return getHL();
+            case HL_:
+                return hl_;
             case PC:
                 return pc;
             case SP:
@@ -183,6 +202,26 @@ public class Z80Context implements Context {
        }
     }
 
+    private void setHL(int value) {
+        switch (hlRegisterMode) {
+            case HL:
+                hl = getLo16bit(value);
+                break;
+            case IX:
+                ix = getLo16bit(value);
+                break;
+            case IY:
+                iy = getLo16bit(value);
+                break;
+            default:
+                throw new Z80EmulationException();
+        }
+    }
+
+    public HLRegisterMode getHlRegisterMode() {
+        return hlRegisterMode;
+    }
+
     public void enableInterrupt() {
         iff1 = iff2 = true;
     }
@@ -191,6 +230,15 @@ public class Z80Context implements Context {
         iff1 = iff2 = false;
     }
 
+    public void swap(RegisterNames r1, RegisterNames r2) {
+        int tmp = get(r1);
+        set(r1, get(r2));
+        set(r2, tmp);
+    }
+
+    public void setIM(InterruptMode mode) {
+        this.interruptMode = mode;
+    }
 
     @Override
     public int incrementAndGet(RegisterNames register) {

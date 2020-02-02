@@ -1,6 +1,7 @@
 package com.zxrasp.emulator.core.spectrum;
 
 import com.zxrasp.emulator.core.*;
+import com.zxrasp.emulator.core.dummy.DummyCPU;
 import com.zxrasp.emulator.core.memory.RAMPage;
 import com.zxrasp.emulator.core.memory.ROMLoadingException;
 import com.zxrasp.emulator.core.memory.ROMPage;

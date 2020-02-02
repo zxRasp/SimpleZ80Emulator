@@ -51,7 +51,7 @@ public class OperationExecutor {
         int pc = context.get(PC);
         byte offset = (byte) bus.readByteFromMemory(pc);
         context.set(PC, pc + offset);
-        return OPERATION_DECODE_COST + JUMP_TIME + 3; // ??
+        return 12;
     }
 
     public long jr_cc(Conditions condition) {
@@ -60,7 +60,7 @@ public class OperationExecutor {
 
         if (cc) {
             byte offset = (byte) bus.readByteFromMemory(pc + 1);
-            context.set(PC, pc + offset);
+            context.set(PC, (pc + 2) + offset);
             return 12;
         }
 
@@ -109,7 +109,7 @@ public class OperationExecutor {
     public long ld_m_hl() {
         int pc = context.get(PC);
         int address = bus.readWordFromMemory(pc + 1);
-        bus.writeWordToMemory(address, context.get(RegisterNames.HL));
+        bus.writeWordToMemory(address, context.get(HL));
         context.set(PC, pc + 3);
         return 20;
     }
@@ -142,7 +142,7 @@ public class OperationExecutor {
         int pc = context.get(PC);
         int address = bus.readWordFromMemory(pc + 1);
         int value = bus.readWordFromMemory(address);
-        context.set(RegisterNames.HL, value);
+        context.set(HL, value);
         context.set(PC, pc + 3);
         return 20;
     }
@@ -169,10 +169,9 @@ public class OperationExecutor {
     }
 
     public long inc8(RegisterNames register) {
-        if (register == RegisterNames.HL) { // special case
-            int address = context.get(register);
-            int value = bus.readByteFromMemory(address);
-            bus.writeByteToMemory(address, value + 1);
+        if (register == HL) { // special case
+            int value = readByteFromMemoryHL();
+            writeByteToMemoryHL(value + 1);
             context.incrementAndGet(PC);
             return 11;
         }
@@ -183,10 +182,9 @@ public class OperationExecutor {
     }
 
     public long dec8(RegisterNames register) {
-        if (register == RegisterNames.HL) { // special case
-            int address = context.get(register);
-            int value = bus.readByteFromMemory(address);
-            bus.writeByteToMemory(address, value - 1);
+        if (register == HL) { // special case
+            int value = readByteFromMemoryHL();
+            writeByteToMemoryHL(value - 1);
             context.incrementAndGet(PC);
             return 11;
         }
@@ -199,9 +197,16 @@ public class OperationExecutor {
     public long ld_8(RegisterNames register) {
         int pc = context.get(PC);
         int value = bus.readByteFromMemory(pc + 1);
-        context.set(register, value);
-        context.set(PC, pc + 2);
-        return 7;
+
+        if (register == HL) { // special case
+            writeByteToMemoryHL(value);
+            context.set(PC, pc + 2);
+            return 10;
+        } else {
+            context.set(register, value);
+            context.set(PC, pc + 2);
+            return 7;
+        }
     }
 
     public long rlca() {
@@ -237,7 +242,7 @@ public class OperationExecutor {
         throw new EmulationException("Not implemented yet");
     }
 
-    public static long cpl() {
+    public long cpl() {
         // todo
         throw new EmulationException("Not implemented yet");
     }
@@ -253,7 +258,7 @@ public class OperationExecutor {
     }
 
     public long ld_r8_r8(RegisterNames dst, RegisterNames src) {
-        if (dst == RegisterNames.HL && src == RegisterNames.HL) { // special case - HALT
+        if (dst == HL && src == HL) { // special case - HALT
             context.setHalt(true);
             return 4;
         }
@@ -267,8 +272,8 @@ public class OperationExecutor {
         int value;
         int result;
 
-        if (register == RegisterNames.HL) {
-            value = bus.readByteFromMemory(context.get(RegisterNames.HL));
+        if (register == HL) {
+            value = bus.readByteFromMemory(context.get(HL));
             result = 7;
         } else {
             value = context.get(register);
@@ -387,16 +392,20 @@ public class OperationExecutor {
     }
 
     public long exx() {
-        throw new EmulationException("Not implemented yet");
+        context.swap(BC, BC_);
+        context.swap(DE, DE_);
+        context.swap(HL, HL_);
+        context.incrementAndGet(PC);
+        return 4;
     }
 
     public long jp_hl() {
-        context.set(PC, context.get(RegisterNames.HL));
+        context.set(PC, context.get(HL));
         return 4;
     }
 
     public long ld_sp_hl() {
-        context.set(SP, context.get(RegisterNames.HL));
+        context.set(SP, context.get(HL));
         context.incrementAndGet(PC);
         return 6;
     }
@@ -446,6 +455,12 @@ public class OperationExecutor {
             case LDIR:
                 result = ldir();
                 break;
+            case LDD:
+                result = ldd();
+                break;
+            case LDDR:
+                result = lddr();
+                break;
             default:
                 throw new EmulationException("Not implemented yet");
         }
@@ -470,9 +485,31 @@ public class OperationExecutor {
     }
 
     private long ldir() {
-        int result = 0;
+        int result = 5;
         do {
             result += ldi();
+        } while (context.get(BC) != 0);
+
+        return result;
+    }
+
+    private long ldd() {
+        int hl = context.get(HL);
+        int de = context.get(DE);
+
+        int val = bus.readByteFromMemory(hl);
+        bus.writeByteToMemory(de, val);
+
+        context.set(HL, hl - 1);
+        context.set(DE, de - 1);
+        context.decrementAndGet(BC);
+        return 16;
+    }
+
+    private long lddr() {
+        int result = 5;
+        do {
+            result += ldd();
         } while (context.get(BC) != 0);
 
         return result;
@@ -508,5 +545,95 @@ public class OperationExecutor {
         context.enableInterrupt();
         context.incrementAndGet(PC);
         return 4;
+    }
+
+    public long sbc_hl_rp(RegisterNames register) {
+        int carry = context.get(Flags.C) ? 1 : 0;
+        context.set(HL, context.get(HL) - context.get(register) - carry);
+        return 15;
+    }
+
+    public long adc_hl_rp(RegisterNames register) {
+        int carry = context.get(Flags.C) ? 1 : 0;
+        context.set(HL, context.get(HL) + context.get(register) + carry);
+        return 15;
+    }
+
+    public long ld_nn_rp(RegisterNames register) {
+        int pc = context.get(PC);
+        int address = bus.readWordFromMemory(pc + 1);
+        bus.writeWordToMemory(address, context.get(register));
+        context.set(PC, pc + 3);
+        return 20;
+    }
+
+    public long ld_rp_nn(RegisterNames register) {
+        int pc = context.get(PC);
+        int address = bus.readWordFromMemory(pc + 1);
+        int value = bus.readByteFromMemory(address);
+        context.set(register, value);
+        context.set(PC, pc + 3);
+        return 20;
+    }
+
+    public long setIM(InterruptMode mode) {
+        context.setIM(mode);
+        return 8;
+    }
+
+    public long testBit(int bit, RegisterNames register) {
+        throw new EmulationException("Not implemented yet");
+    }
+
+    public long resetBit(int bit, RegisterNames register) {
+        throw new EmulationException("Not implemented yet");
+    }
+
+    public long setBit(int bit, RegisterNames register) {
+        if (register == HL) { // special case
+            int value = readByteFromMemoryHL();
+            writeByteToMemoryHL(value | (1 << bit));
+            return 15;
+        }
+
+        int value = context.get(register);
+        value |= (1 << bit);
+        context.set(register, value);
+        return 8;
+    }
+
+    public long extendedSetBit(int bit, int offset) {
+        int address = context.get(HL) + offset;
+        int value = bus.readByteFromMemory(address);
+        bus.writeByteToMemory(address, value | (1 << bit));
+        return 23;
+    }
+
+    private int readByteFromMemoryHL() {
+        byte offset = 0;
+        int address = context.get(HL);
+
+        switch (context.getHlRegisterMode()) {
+            case IX:
+            case IY:
+                offset = (byte) bus.readByteFromMemory(context.incrementAndGet(PC));
+                break;
+        }
+
+        return bus.readByteFromMemory(address + offset);
+    }
+
+    private void writeByteToMemoryHL(int value) {
+        byte offset = 0;
+        int address = context.get(HL);
+
+        switch (context.getHlRegisterMode()) {
+            case IX:
+            case IY:
+                offset = (byte) bus.readByteFromMemory(context.incrementAndGet(PC));
+                break;
+        }
+
+        bus.writeByteToMemory(address + offset, value);
     }
 }

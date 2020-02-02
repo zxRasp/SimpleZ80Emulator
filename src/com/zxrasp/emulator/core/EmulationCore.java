@@ -21,7 +21,7 @@ public class EmulationCore {
             throw new EmulationConfigurationException("Undefined config: " + args[0]);
         }
 
-        isDebugMode = true;
+        isDebugMode = false;
     }
 
     public void doEmulation() {

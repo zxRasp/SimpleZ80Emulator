@@ -5,6 +5,7 @@ import com.zxrasp.emulator.core.SystemBusDevice;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.zxrasp.emulator.core.z80.z80internals.InterruptMode.*;
 import static com.zxrasp.emulator.core.z80.z80internals.RegisterNames.PC;
 import static com.zxrasp.emulator.core.z80.z80internals.RegisterNames.R;
 import static com.zxrasp.emulator.core.z80.z80internals.Z80Context.HLRegisterMode.*;
@@ -14,8 +15,7 @@ public class Z80OperationDecoder {
     private static final Map<Integer, RegisterNames> r8 = new HashMap<>();
     private static final Map<Integer, RegisterNames> r16a = new HashMap<>();
     private static final Map<Integer, RegisterNames> r16b = new HashMap<>();
-
-    private static int totalTicks;
+    private static final Map<Integer, InterruptMode> im = new HashMap<>();
 
     private final OperationExecutor executor;
 
@@ -38,6 +38,15 @@ public class Z80OperationDecoder {
         r16b.put(1, RegisterNames.DE);
         r16b.put(2, RegisterNames.HL);
         r16b.put(3, RegisterNames.AF);
+
+        im.put(0, IM_0);
+        im.put(1, IM_0); // 0/1 ???
+        im.put(2, IM_1);
+        im.put(3, IM_2);
+        im.put(4, IM_0);
+        im.put(5, IM_0); // 0/1 ???
+        im.put(6, IM_1);
+        im.put(7, IM_2);
     }
 
     private Z80Context context;
@@ -54,7 +63,7 @@ public class Z80OperationDecoder {
         int pc = context.get(PC);
         int opcode = bus.readByteFromMemory(pc);
 
-        System.out.printf("PC: %X, opcode: %X\n", pc, opcode);
+        //System.out.printf("PC: %X, opcode: %X\n", pc, opcode);
 
         long result;
 
@@ -65,8 +74,6 @@ public class Z80OperationDecoder {
         }
 
         context.incrementAndGet(R);
-        totalTicks += result;
-
         return result;
     }
 
@@ -224,6 +231,8 @@ public class Z80OperationDecoder {
 
     private long resolveExtendedOperation(int prefix, int opcode) throws UnknownOperationException {
         switch (prefix) {
+            case 0xCB:
+                return decodeCBOperation(opcode);
             case 0xED:
                 return decodeEDOperation(opcode);
             case 0xDD:
@@ -234,10 +243,30 @@ public class Z80OperationDecoder {
         throw new UnknownOperationException(String.format("Unknown opcode: %x %x", prefix, opcode), context);
     }
 
+    private long decodeCBOperation(int opcode) {
+        int x = (opcode >> 6) & 3;
+        int y = (opcode >> 3) & 7;
+        int z = opcode & 7;
+
+        switch (x) {
+            case 1:
+                return executor.testBit(y, r8.get(z));
+            case 2:
+                return executor.resetBit(y, r8.get(z));
+            case 3:
+                return executor.setBit(y, r8.get(z));
+            default:
+                throw new UnknownOperationException(String.format("Unknown opcode: %x", opcode), context);
+
+        }
+    }
+
     private long decodeEDOperation(int opcode) {
         int x = (opcode >> 6) & 3;
         int y = (opcode >> 3) & 7;
         int z = opcode & 7;
+        int p = y >> 1;
+        int q = y & 1;
 
         switch (x) {
             case 0:
@@ -245,6 +274,22 @@ public class Z80OperationDecoder {
                 throw new InvalidOperationException(opcode);
             case 1:
                 switch(z) {
+                    case 2:
+                        switch (q) {
+                            case 0:
+                                return executor.sbc_hl_rp(r16a.get(p));
+                            case 1:
+                                return executor.adc_hl_rp(r16a.get(p));
+                        }
+                    case 3:
+                        switch (q) {
+                            case 0:
+                                return executor.ld_nn_rp(r16a.get(p));
+                            case 1:
+                                return executor.ld_rp_nn(r16a.get(p));
+                        }
+                    case 6:
+                        return executor.setIM(im.get(y));
                     case 7:
                         switch (y) {
                             case 0:
@@ -276,7 +321,11 @@ public class Z80OperationDecoder {
         }
 
         if (opcode == 0xCB) {
-            return decodeDDCBOperation(opcode);
+            context.setHLRegisterMode(prefix == 0xDD ? IX : IY);
+            int offset = bus.readByteFromMemory(context.incrementAndGet(PC));
+            long result = decodeExtendedCBOperation(offset, bus.readByteFromMemory(context.incrementAndGet(PC)));
+            context.setHLRegisterMode(HL);
+            return result;
         }
 
         context.setHLRegisterMode(prefix == 0xDD ? IX : IY);
@@ -285,7 +334,21 @@ public class Z80OperationDecoder {
         return result;
     }
 
-    private long decodeDDCBOperation(int opcode) {
-        throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
+    private long decodeExtendedCBOperation(int offset, int opcode) {
+        int x = (opcode >> 6) & 3;
+        int y = (opcode >> 3) & 7;
+        int z = opcode & 7;
+
+
+        switch (x) {
+            case 3:
+                if (z == 6) {
+                    return executor.extendedSetBit(y, offset);
+                } else {
+                    throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
+                }
+            default:
+                throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
+        }
     }
 }
