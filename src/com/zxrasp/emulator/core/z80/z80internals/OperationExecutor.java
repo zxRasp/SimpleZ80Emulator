@@ -80,13 +80,13 @@ public class OperationExecutor {
         return 10;
     }
 
-    public long add_hl(RegisterNames register) {
+    public long add_to_hl(RegisterNames register) {
         int pc = context.get(PC);
+        int hl = context.get(HL);
         int rvalue = context.get(register);
-        int mvalue = bus.readWordFromMemory(pc);
-        context.set(register, rvalue + mvalue);
+        context.set(HL, hl + rvalue);
         // todo: set flags
-        context.set(PC, pc + 3);
+        context.set(PC, pc + 1);
         return 11;
     }
 

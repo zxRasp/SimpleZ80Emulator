@@ -22,7 +22,7 @@ public class TestMachine extends AbstractSystem {
         try {
             page = new RAMPage(new FileInputStream("zexdoc.com"), PAGE_SIZE, 0x100);
         } catch (FileNotFoundException e) {
-            new ROMLoadingException();
+            throw new ROMLoadingException();
         }
     }
 

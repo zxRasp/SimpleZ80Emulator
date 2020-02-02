@@ -50,12 +50,12 @@ public class OperationDecoder {
         int pc = context.get(RegisterNames.PC);
         int opcode = bus.readByteFromMemory(pc);
 
-        //System.out.printf("PC: %X, opcode: %X\n", pc, opcode);
+        System.out.printf("PC: %X, opcode: %X\n", pc, opcode);
 
         long result;
 
         if (isExtendedOpcode(opcode)) {
-            result = resolveExtendedOperation(opcode, bus.readByteFromMemory(pc + 1));
+            result = resolveExtendedOperation(opcode, bus.readByteFromMemory(context.incrementAndGet(RegisterNames.PC)));
         } else {
             result = decodeOneByteOperation(opcode);
         }
@@ -97,7 +97,7 @@ public class OperationDecoder {
                             case 0:
                                 return executor.ld_16(r16a.get(p));
                             case 1:
-                                return executor.add_hl(r16a.get(p));
+                                return executor.add_to_hl(r16a.get(p));
                     }
                     case 2:
                         switch (q) {

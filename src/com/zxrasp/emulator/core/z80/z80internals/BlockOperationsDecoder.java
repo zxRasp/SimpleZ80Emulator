@@ -4,7 +4,7 @@ import static com.zxrasp.emulator.core.z80.z80internals.BlockOperations.*;
 
 public class BlockOperationsDecoder {
 
-    private static BlockOperations operations[][] = {
+    private static BlockOperations[][] operations = {
             { LDI,	CPI,	INI,	OUTI },
             { LDD,	CPD,	IND,	OUTD },
             { LDIR,	CPIR,	INIR,	OTIR },
