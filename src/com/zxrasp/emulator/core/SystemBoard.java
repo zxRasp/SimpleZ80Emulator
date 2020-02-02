@@ -1,6 +1,6 @@
 package com.zxrasp.emulator.core;
 
-public abstract class SystemBoard implements SystemBusDevice {
+public abstract class SystemBoard implements SystemBusDevice, DebugAware {
 
     public abstract CPU getCPU();
 

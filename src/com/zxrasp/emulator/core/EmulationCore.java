@@ -16,12 +16,12 @@ public class EmulationCore {
             systemBoard = new TestMachine();
         } else if (args[0].equalsIgnoreCase("zx")) {
             Screen screen = new SwingScreen("ZX 48K", new Dimension(800, 600));
-            systemBoard = new Spectrum48K(screen, "48.rom");
+            systemBoard = new Spectrum48K(screen, "test.rom");
         } else {
             throw new EmulationConfigurationException("Undefined config: " + args[0]);
         }
 
-        isDebugMode = false;
+        isDebugMode = true;
     }
 
     public void doEmulation() {
@@ -31,7 +31,7 @@ public class EmulationCore {
             systemBoard.clock();
 
             if (isDebugMode) {
-                System.out.println(systemBoard.getCPU().getContext());
+                System.out.println(systemBoard.getCPU());
             }
         }
     }

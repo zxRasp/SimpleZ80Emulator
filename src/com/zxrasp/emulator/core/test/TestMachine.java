@@ -4,6 +4,7 @@ import com.zxrasp.emulator.core.SystemBoard;
 import com.zxrasp.emulator.core.CPU;
 import com.zxrasp.emulator.core.memory.RAMPage;
 import com.zxrasp.emulator.core.memory.ROMLoadingException;
+import com.zxrasp.emulator.core.z80.Z80;
 import com.zxrasp.emulator.core.z80.Z80TestDecorator;
 
 import java.io.FileInputStream;
@@ -13,7 +14,7 @@ public class TestMachine extends SystemBoard {
 
     private static final int PAGE_SIZE = 64 * 1024;
 
-    private CPU cpu;
+    private Z80 cpu;
     private RAMPage page;
 
     public TestMachine() {
@@ -55,5 +56,10 @@ public class TestMachine extends SystemBoard {
         }
 
         cpu.clock();
+    }
+
+    @Override
+    public int getCurrentOpcode() {
+        return cpu.getCurrentOpcode();
     }
 }

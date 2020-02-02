@@ -1,7 +1,6 @@
 package com.zxrasp.emulator.core.spectrum;
 
 import com.zxrasp.emulator.core.*;
-import com.zxrasp.emulator.core.dummy.DummyCPU;
 import com.zxrasp.emulator.core.memory.RAMPage;
 import com.zxrasp.emulator.core.memory.ROMLoadingException;
 import com.zxrasp.emulator.core.memory.ROMPage;
@@ -21,7 +20,7 @@ public class Spectrum48K extends SystemBoard {
     private Memory[] pages;
 
     private int portFE;
-    private CPU cpu;
+    private Z80 cpu;
     private VideoController videoController;
     private long cpuTicks;
     private long frameStartTime;
@@ -107,5 +106,10 @@ public class Spectrum48K extends SystemBoard {
     public int readByteFromMemory(int address) {
         int page = (address >> 14) & 0x3;
         return pages[page].readByteFromMemory(address & 0x3FFF);
+    }
+
+    @Override
+    public int getCurrentOpcode() {
+        return cpu.getCurrentOpcode();
     }
 }

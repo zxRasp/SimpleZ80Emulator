@@ -1,5 +1,6 @@
 package com.zxrasp.emulator.core.z80.z80internals;
 
+import com.zxrasp.emulator.core.DebugAware;
 import com.zxrasp.emulator.core.SystemBusDevice;
 
 import java.util.HashMap;
@@ -10,7 +11,7 @@ import static com.zxrasp.emulator.core.z80.z80internals.RegisterNames.PC;
 import static com.zxrasp.emulator.core.z80.z80internals.RegisterNames.R;
 import static com.zxrasp.emulator.core.z80.z80internals.Z80Context.HLRegisterMode.*;
 
-public class Z80OperationDecoder {
+public class Z80OperationDecoder implements DebugAware {
 
     private static final Map<Integer, RegisterNames> r8 = new HashMap<>();
     private static final Map<Integer, RegisterNames> r16a = new HashMap<>();
@@ -51,6 +52,7 @@ public class Z80OperationDecoder {
 
     private Z80Context context;
     private SystemBusDevice bus;
+    private int opcode;
 
 
     public Z80OperationDecoder(Z80Context context, SystemBusDevice bus) {
@@ -60,11 +62,7 @@ public class Z80OperationDecoder {
     }
 
     public long decodeAndExecute() throws UnknownOperationException{
-        int pc = context.get(PC);
-        int opcode = bus.readByteFromMemory(pc);
-
-        //System.out.printf("PC: %X, opcode: %X\n", pc, opcode);
-
+        opcode = bus.readByteFromMemory(context.get(PC));
         long result;
 
         if (isExtendedOpcode(opcode)) {
@@ -350,5 +348,10 @@ public class Z80OperationDecoder {
             default:
                 throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
         }
+    }
+
+    @Override
+    public int getCurrentOpcode() {
+        return opcode;
     }
 }

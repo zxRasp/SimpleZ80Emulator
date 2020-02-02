@@ -1,10 +1,11 @@
 package com.zxrasp.emulator.core.z80;
 
 import com.zxrasp.emulator.core.CPU;
+import com.zxrasp.emulator.core.DebugAware;
 import com.zxrasp.emulator.core.SystemBusDevice;
 import com.zxrasp.emulator.core.z80.z80internals.*;
 
-public class Z80 implements CPU {
+public class Z80 implements CPU, DebugAware {
 
     protected Z80Context context;
     protected SystemBusDevice bus;
@@ -38,7 +39,12 @@ public class Z80 implements CPU {
     }
 
     @Override
-    public Context getContext() {
-        return context;
+    public int getCurrentOpcode() {
+        return decoder.getCurrentOpcode();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Current opcode: %02X\n%s", getCurrentOpcode(), context);
     }
 }

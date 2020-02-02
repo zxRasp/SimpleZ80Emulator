@@ -1,6 +1,5 @@
 package com.zxrasp.emulator.core;
 
-import com.zxrasp.emulator.core.z80.z80internals.Context;
 import com.zxrasp.emulator.core.z80.z80internals.UnknownOperationException;
 
 public interface CPU {
@@ -12,6 +11,4 @@ public interface CPU {
     boolean isHalted();
 
     void interrupt(boolean masked);
-
-    Context getContext();
 }

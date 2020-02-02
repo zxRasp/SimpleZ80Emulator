@@ -171,12 +171,15 @@ public class OperationExecutor {
     public long inc8(RegisterNames register) {
         if (register == HL) { // special case
             int value = readByteFromMemoryHL();
-            writeByteToMemoryHL(value + 1);
+            setALUFlags(++value);
+            writeByteToMemoryHL(value);
             context.incrementAndGet(PC);
             return 11;
         }
 
-        context.incrementAndGet(register);
+        int value = context.get(register);
+        setALUFlags(++value);
+        context.set(register, value);
         context.incrementAndGet(PC);
         return 4;
     }
@@ -184,12 +187,15 @@ public class OperationExecutor {
     public long dec8(RegisterNames register) {
         if (register == HL) { // special case
             int value = readByteFromMemoryHL();
-            writeByteToMemoryHL(value - 1);
+            setALUFlags(--value);
+            writeByteToMemoryHL(value);
             context.incrementAndGet(PC);
             return 11;
         }
 
-        context.decrementAndGet(register);
+        int value = context.get(register);
+        setALUFlags(--value);
+        context.set(register, value);
         context.incrementAndGet(PC);
         return 4;
     }
@@ -343,7 +349,7 @@ public class OperationExecutor {
 
     private void setALUFlags(int operationResult) {
         context.set(Flags.Z, operationResult == 0);
-
+        context.set(Flags.S, operationResult < 0);
     }
 
     public long ret_cc(Conditions condition) {
