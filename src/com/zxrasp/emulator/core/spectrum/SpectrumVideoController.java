@@ -1,7 +1,7 @@
 package com.zxrasp.emulator.core.spectrum;
 
 import com.zxrasp.emulator.core.Screen;
-import com.zxrasp.emulator.core.SystemBus;
+import com.zxrasp.emulator.core.SystemBusDevice;
 import com.zxrasp.emulator.core.VideoController;
 
 public class SpectrumVideoController implements VideoController, SpectrumScreenMetrics {
@@ -17,14 +17,14 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
     private static final int BRIGHT_COLOR = 255;
     private static final int NORMAL_COLOR = 205;
 
-    private SystemBus bus;
+    private SystemBusDevice bus;
     private Screen screen;
 
     private int frameCount = 0;
     private boolean isInverse = false;
 
 
-    public SpectrumVideoController(SystemBus bus, Screen screen) {
+    public SpectrumVideoController(SystemBusDevice bus, Screen screen) {
         this.bus = bus;
         this.screen = screen;
     }

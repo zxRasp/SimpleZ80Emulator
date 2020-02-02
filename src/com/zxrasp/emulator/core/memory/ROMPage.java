@@ -32,7 +32,7 @@ public class ROMPage implements Memory {
 
     @Override
     public int readByteFromMemory(int address) {
-        return memory[address];
+        return memory[address] & 0xFF;
     }
 
 }

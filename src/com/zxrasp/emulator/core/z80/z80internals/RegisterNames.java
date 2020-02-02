@@ -4,7 +4,7 @@ public enum RegisterNames {
 
     /* General purpose */
 
-    /* Main set */
+    /* com.zxrasp.emulator.Main set */
 
     // 8-bit
     A, F, B, C, D, E, H, L,

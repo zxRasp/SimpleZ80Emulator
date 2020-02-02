@@ -1,6 +1,10 @@
 package com.zxrasp.emulator.core;
 
-public abstract class AbstractSystem implements SystemBus {
+public abstract class SystemBoard implements SystemBusDevice {
+
+    public abstract CPU getCPU();
+
+    public abstract void reset();
 
     @Override
     public void writeByteToPort(int address, int data) {

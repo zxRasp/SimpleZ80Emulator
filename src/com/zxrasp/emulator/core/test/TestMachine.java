@@ -1,6 +1,6 @@
 package com.zxrasp.emulator.core.test;
 
-import com.zxrasp.emulator.core.AbstractSystem;
+import com.zxrasp.emulator.core.SystemBoard;
 import com.zxrasp.emulator.core.CPU;
 import com.zxrasp.emulator.core.memory.RAMPage;
 import com.zxrasp.emulator.core.memory.ROMLoadingException;
@@ -9,10 +9,9 @@ import com.zxrasp.emulator.core.z80.Z80TestDecorator;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-public class TestMachine extends AbstractSystem {
+public class TestMachine extends SystemBoard {
 
     private static final int PAGE_SIZE = 64 * 1024;
-
 
     private CPU cpu;
     private RAMPage page;
@@ -24,6 +23,16 @@ public class TestMachine extends AbstractSystem {
         } catch (FileNotFoundException e) {
             throw new ROMLoadingException();
         }
+    }
+
+    @Override
+    public CPU getCPU() {
+        return cpu;
+    }
+
+    @Override
+    public void reset() {
+        cpu.reset();
     }
 
     @Override
@@ -40,11 +49,11 @@ public class TestMachine extends AbstractSystem {
     }
 
     @Override
-    public void run() {
-        while (!cpu.isHalted()) {
-            cpu.clock();
+    public void clock() {
+        if (cpu.isHalted()) {
+            return;
         }
+
+        cpu.clock();
     }
-
-
 }

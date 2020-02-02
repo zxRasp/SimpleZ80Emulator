@@ -1,13 +1,13 @@
 package com.zxrasp.emulator.core.z80;
 
 import com.zxrasp.emulator.core.EmulationException;
-import com.zxrasp.emulator.core.SystemBus;
+import com.zxrasp.emulator.core.SystemBusDevice;
 import com.zxrasp.emulator.core.z80.z80internals.RegisterNames;
 import com.zxrasp.emulator.core.z80.z80internals.UnknownOperationException;
 
 public class Z80TestDecorator extends Z80 {
 
-    public Z80TestDecorator(SystemBus bus) {
+    public Z80TestDecorator(SystemBusDevice bus) {
         super(bus);
         context.set(RegisterNames.PC, 0x0100);
         context.set(RegisterNames.SP, 0xFF00);

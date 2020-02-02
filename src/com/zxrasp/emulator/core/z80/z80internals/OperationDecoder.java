@@ -1,6 +1,6 @@
 package com.zxrasp.emulator.core.z80.z80internals;
 
-import com.zxrasp.emulator.core.SystemBus;
+import com.zxrasp.emulator.core.SystemBusDevice;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,10 +37,10 @@ public class OperationDecoder {
     }
 
     private Context context;
-    private SystemBus bus;
+    private SystemBusDevice bus;
 
 
-    public OperationDecoder(Context context, SystemBus bus) {
+    public OperationDecoder(Context context, SystemBusDevice bus) {
         this.context = context;
         this.bus = bus;
         this.executor = new OperationExecutor(context, bus);

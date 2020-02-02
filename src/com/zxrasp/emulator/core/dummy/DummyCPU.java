@@ -1,6 +1,7 @@
 package com.zxrasp.emulator.core.dummy;
 
 import com.zxrasp.emulator.core.CPU;
+import com.zxrasp.emulator.core.z80.z80internals.Context;
 import com.zxrasp.emulator.core.z80.z80internals.UnknownOperationException;
 
 public class DummyCPU implements CPU {
@@ -23,5 +24,10 @@ public class DummyCPU implements CPU {
     @Override
     public void interrupt(boolean masked) {
         // nothing to do
+    }
+
+    @Override
+    public Context getContext() {
+        return null;
     }
 }

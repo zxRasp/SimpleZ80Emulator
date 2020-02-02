@@ -176,9 +176,7 @@ public class Z80Context implements Context {
 
     @Override
     public String toString() {
-        return "{" +
-                "pc=" + pc +
-                ", sp=" + sp +
-                '}';
+        return String.format("[AF = %X | BC = %X | DE = %X | HL = %X | PC = %X | SP = %X | IX = %X | IY = %X]",
+                af, bc, de, hl, pc, sp, ix, iy);
     }
 }

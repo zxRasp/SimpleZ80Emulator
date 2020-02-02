@@ -1,7 +1,7 @@
 package com.zxrasp.emulator.core.z80.z80internals;
 
 import com.zxrasp.emulator.core.EmulationException;
-import com.zxrasp.emulator.core.SystemBus;
+import com.zxrasp.emulator.core.SystemBusDevice;
 
 import static com.zxrasp.emulator.core.z80.z80internals.RegisterNames.*;
 
@@ -13,9 +13,9 @@ public class OperationExecutor {
     private static final int JUMP_TIME = 5;
 
     private final Context context;
-    private final SystemBus bus;
+    private final SystemBusDevice bus;
 
-    public OperationExecutor(Context context, SystemBus bus) {
+    public OperationExecutor(Context context, SystemBusDevice bus) {
         this.context = context;
         this.bus = bus;
     }
