@@ -23,7 +23,8 @@ public class Spectrum48K extends SystemBoard {
     private CPU cpu;
     private VideoController videoController;
     private long cpuTicks;
-    private long startTime;
+    private long frameStartTime;
+    private long actualFrameTime;
 
     public Spectrum48K(Screen screen, String romName) {
         cpu = new Z80(this);
@@ -51,8 +52,9 @@ public class Spectrum48K extends SystemBoard {
     @Override
     public void reset() {
         cpu.reset();
-        startTime = System.currentTimeMillis();
+        frameStartTime = System.currentTimeMillis();
         cpuTicks = 0;
+        actualFrameTime = 0;
     }
 
     @Override
@@ -79,7 +81,7 @@ public class Spectrum48K extends SystemBoard {
             cpuTicks = 0;
             videoController.drawFrame(0);
             cpu.interrupt(true);
-            long actualFrameTime = System.currentTimeMillis() - startTime;
+            actualFrameTime = System.currentTimeMillis() - frameStartTime;
 
             if (actualFrameTime < FRAME_TIME) {
                 try {
@@ -88,6 +90,9 @@ public class Spectrum48K extends SystemBoard {
                     e.printStackTrace();
                 }
             }
+
+            frameStartTime = System.currentTimeMillis();
+            actualFrameTime = 0;
         }
     }
 

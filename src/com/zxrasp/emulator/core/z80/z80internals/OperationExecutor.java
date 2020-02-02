@@ -12,10 +12,10 @@ public class OperationExecutor {
     private static final int COMPARE_TIME = 4;
     private static final int JUMP_TIME = 5;
 
-    private final Context context;
+    private final Z80Context context;
     private final SystemBusDevice bus;
 
-    public OperationExecutor(Context context, SystemBusDevice bus) {
+    public OperationExecutor(Z80Context context, SystemBusDevice bus) {
         this.context = context;
         this.bus = bus;
     }
@@ -38,7 +38,7 @@ public class OperationExecutor {
         int pc = context.get(PC);
 
         if (b != 0) {
-            int offset = bus.readByteFromMemory(pc + 1);
+            byte offset = (byte) bus.readByteFromMemory(pc + 1);
             context.set(PC, pc + offset);
             return OPERATION_DECODE_COST + COMPARE_TIME + JUMP_TIME;
         }
@@ -49,7 +49,7 @@ public class OperationExecutor {
 
     public long jr() {
         int pc = context.get(PC);
-        int offset = bus.readByteFromMemory(pc);
+        byte offset = (byte) bus.readByteFromMemory(pc);
         context.set(PC, pc + offset);
         return OPERATION_DECODE_COST + JUMP_TIME + 3; // ??
     }
@@ -59,7 +59,7 @@ public class OperationExecutor {
         int pc = context.get(PC);
 
         if (cc) {
-            int offset = bus.readByteFromMemory(pc + 1);
+            byte offset = (byte) bus.readByteFromMemory(pc + 1);
             context.set(PC, pc + offset);
             return 12;
         }
@@ -478,5 +478,35 @@ public class OperationExecutor {
         return result;
     }
 
+    public long out_n_a() {
+        int pc = context.get(PC);
+        int address = bus.readByteFromMemory(pc + 1);
+        bus.writeByteToPort(address, context.get(A));
+        context.set(PC, pc + 2);
+        return 11;
+    }
 
+    public long ld_a_i() {
+        context.set(A, context.get(I));
+        context.incrementAndGet(PC);
+        return 9;
+    }
+
+    public long ld_i_a() {
+        context.set(I, context.get(A));
+        context.incrementAndGet(PC);
+        return 9;
+    }
+
+    public long di() {
+        context.disableInterrupt();
+        context.incrementAndGet(PC);
+        return 4;
+    }
+
+    public long ei() {
+        context.enableInterrupt();
+        context.incrementAndGet(PC);
+        return 4;
+    }
 }

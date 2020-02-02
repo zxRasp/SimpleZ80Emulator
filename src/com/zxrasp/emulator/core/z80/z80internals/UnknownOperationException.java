@@ -1,8 +1,6 @@
 package com.zxrasp.emulator.core.z80.z80internals;
 
-import com.zxrasp.emulator.core.EmulationException;
-
-public class UnknownOperationException extends EmulationException {
+public class UnknownOperationException extends Z80EmulationException {
     private Context context;
 
     public UnknownOperationException(String message, Context context) {

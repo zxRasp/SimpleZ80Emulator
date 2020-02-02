@@ -9,6 +9,11 @@ public class Z80TestDecorator extends Z80 {
 
     public Z80TestDecorator(SystemBusDevice bus) {
         super(bus);
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
         context.set(RegisterNames.PC, 0x0100);
         context.set(RegisterNames.SP, 0xFF00);
     }

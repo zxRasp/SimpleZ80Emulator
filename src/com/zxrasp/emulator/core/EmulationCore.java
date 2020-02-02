@@ -16,7 +16,7 @@ public class EmulationCore {
             systemBoard = new TestMachine();
         } else if (args[0].equalsIgnoreCase("zx")) {
             Screen screen = new SwingScreen("ZX 48K", new Dimension(800, 600));
-            systemBoard = new Spectrum48K(screen, "test.rom");
+            systemBoard = new Spectrum48K(screen, "48.rom");
         } else {
             throw new EmulationConfigurationException("Undefined config: " + args[0]);
         }

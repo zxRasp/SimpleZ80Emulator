@@ -21,5 +21,8 @@ public enum RegisterNames {
     AF_, BC_, DE_, HL_,
 
     /* Special */
-    PC, SP, IX, IY, I, R
+    PC, SP, IX, IY, I, R,
+
+    /* half of IX/IY */
+    IXh, IXl, IYh, IYl
 }
