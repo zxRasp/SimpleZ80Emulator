@@ -5,6 +5,9 @@ import com.zxrasp.emulator.core.test.TestMachine;
 import com.zxrasp.emulator.platform.SwingScreen;
 
 import java.awt.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class EmulationCore {
 
@@ -12,16 +15,7 @@ public class EmulationCore {
     private boolean isDebugMode;
 
     public EmulationCore(String[] args) {
-        if (args.length == 0) {
-            systemBoard = new TestMachine();
-        } else if (args[0].equalsIgnoreCase("zx")) {
-            Screen screen = new SwingScreen("ZX 48K", new Dimension(800, 600));
-            systemBoard = new Spectrum48K(screen, "test.rom");
-        } else {
-            throw new EmulationConfigurationException("Undefined config: " + args[0]);
-        }
-
-        isDebugMode = true;
+        configureEmulator(args);
     }
 
     public void doEmulation() {
@@ -34,5 +28,30 @@ public class EmulationCore {
                 System.out.println(systemBoard.getCPU());
             }
         }
+    }
+
+    private void configureEmulator(String[] args) {
+        Set<String> config = new HashSet<>(args.length);
+        Collections.addAll(config, args);
+
+        if (config.contains("debug")) {
+            isDebugMode = true;
+        }
+
+        String romName;
+
+        if (config.contains("48")) {
+            romName = "48.rom";
+        } else {
+            romName = "test.rom";
+        }
+
+        if (config.contains("zx")) {
+            Screen screen = new SwingScreen(romName, new Dimension(800, 600));
+            systemBoard = new Spectrum48K(screen, romName);
+        } else {
+            systemBoard = new TestMachine();
+        }
+
     }
 }
