@@ -7,38 +7,35 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.zxrasp.emulator.core.z80.z80internals.InterruptMode.*;
-import static com.zxrasp.emulator.core.z80.z80internals.RegisterNames.PC;
-import static com.zxrasp.emulator.core.z80.z80internals.RegisterNames.R;
-import static com.zxrasp.emulator.core.z80.z80internals.Z80Context.HLRegisterMode.*;
+import static com.zxrasp.emulator.core.z80.z80internals.RegisterSpecial.PC;
 
 public class Z80OperationDecoder implements DebugAware {
 
-    private static final Map<Integer, RegisterNames> r8 = new HashMap<>();
-    private static final Map<Integer, RegisterNames> r16a = new HashMap<>();
-    private static final Map<Integer, RegisterNames> r16b = new HashMap<>();
+    private static final Map<Integer, Register8> r8 = new HashMap<>();
+    private static final Map<Integer, Register16> r16a = new HashMap<>();
+    private static final Map<Integer, Register16> r16b = new HashMap<>();
     private static final Map<Integer, InterruptMode> im = new HashMap<>();
 
     private final OperationExecutor executor;
 
     static {
-        r8.put(0, RegisterNames.B);
-        r8.put(1, RegisterNames.C);
-        r8.put(2, RegisterNames.D);
-        r8.put(3, RegisterNames.E);
-        r8.put(4, RegisterNames.H);
-        r8.put(5, RegisterNames.L);
-        r8.put(6, RegisterNames.HL); // special case, means (HL)!
-        r8.put(7, RegisterNames.A);
+        r8.put(0, Register8.B);
+        r8.put(1, Register8.C);
+        r8.put(2, Register8.D);
+        r8.put(3, Register8.E);
+        r8.put(4, Register8.H);
+        r8.put(5, Register8.L);
+        r8.put(7, Register8.A);
 
-        r16a.put(0, RegisterNames.BC);
-        r16a.put(1, RegisterNames.DE);
-        r16a.put(2, RegisterNames.HL);
-        r16a.put(3, RegisterNames.SP);
+        r16a.put(0, Register16.BC);
+        r16a.put(1, Register16.DE);
+        r16a.put(2, Register16.HL);
+        r16a.put(3, Register16.SP);
 
-        r16b.put(0, RegisterNames.BC);
-        r16b.put(1, RegisterNames.DE);
-        r16b.put(2, RegisterNames.HL);
-        r16b.put(3, RegisterNames.AF);
+        r16b.put(0, Register16.BC);
+        r16b.put(1, Register16.DE);
+        r16b.put(2, Register16.HL);
+        r16b.put(3, Register16.AF);
 
         im.put(0, IM_0);
         im.put(1, IM_0); // 0/1 ???
@@ -52,6 +49,7 @@ public class Z80OperationDecoder implements DebugAware {
 
     private Z80Context context;
     private SystemBusDevice bus;
+    private int prefix;
     private int opcode;
 
 
@@ -62,24 +60,31 @@ public class Z80OperationDecoder implements DebugAware {
     }
 
     public long decodeAndExecute() throws UnknownOperationException{
-        opcode = bus.readByteFromMemory(context.get(PC));
+        fetchOpcode();
         long result;
 
-        if (isExtendedOpcode(opcode)) {
-            result = resolveExtendedOperation(opcode, bus.readByteFromMemory(context.incrementAndGet(PC)));
+        if (isExtendedOpcode()) {
+            prefix = opcode;
+            fetchOpcode();
+            result = resolveExtendedOperation();
         } else {
-            result = decodeOneByteOperation(opcode);
+            result = decodeOneByteOperation();
         }
 
-        context.incrementAndGet(R);
+        context.incrementR();
         return result;
     }
 
-    private boolean isExtendedOpcode(int opcode) {
+    private void fetchOpcode() {
+        int pc = context.getAndIncrement(PC);
+        opcode = bus.readByteFromMemory(pc);
+    }
+
+    private boolean isExtendedOpcode() {
         return opcode == 0xCB || opcode == 0xDD || opcode == 0xED || opcode == 0xFD;
     }
 
-    private long decodeOneByteOperation(int opcode) throws UnknownOperationException {
+    private long decodeOneByteOperation() throws UnknownOperationException {
         int x = (opcode >> 6) & 3;
         int y = (opcode >> 3) & 7;
         int z = opcode & 7;
@@ -142,11 +147,11 @@ public class Z80OperationDecoder implements DebugAware {
                                 return executor.dec16(r16a.get(p));
                         }
                     case 4:
-                        return executor.inc8(r8.get(y));
+                        return (y == 6) ? executor.inc8_hl() : executor.inc8(r8.get(y));
                     case 5:
-                        return executor.dec8(r8.get(y));
+                        return (y == 6) ? executor.dec8_hl() : executor.dec8(r8.get(y));
                     case 6:
-                        return executor.ld_8(r8.get(y));
+                        return (y == 6) ? executor.ld_8_hl() : executor.ld_8(r8.get(y));
                     case 7:
                         switch (y) {
                             case 0:
@@ -168,6 +173,9 @@ public class Z80OperationDecoder implements DebugAware {
                         }
                 }
             case 1:
+                if (y == 6 && z == 6) {
+                    return executor.halt();
+                }
                 return executor.ld_r8_r8(r8.get(y), r8.get(z));
             case 2:
                 return executor.performALUOperation(ALUOperations.values()[y], r8.get(z));
@@ -227,21 +235,21 @@ public class Z80OperationDecoder implements DebugAware {
         throw  new UnknownOperationException(String.format("Unknown opcode: %x", opcode), context);
     }
 
-    private long resolveExtendedOperation(int prefix, int opcode) throws UnknownOperationException {
+    private long resolveExtendedOperation() throws UnknownOperationException {
         switch (prefix) {
             case 0xCB:
-                return decodeCBOperation(opcode);
+                return decodeCBOperation();
             case 0xED:
-                return decodeEDOperation(opcode);
+                return decodeEDOperation();
             case 0xDD:
             case 0xFD:
-                return decodeIXIYOperation(prefix, opcode);
+                return decodeIXIYOperation();
         }
 
         throw new UnknownOperationException(String.format("Unknown opcode: %x %x", prefix, opcode), context);
     }
 
-    private long decodeCBOperation(int opcode) {
+    private long decodeCBOperation() {
         int x = (opcode >> 6) & 3;
         int y = (opcode >> 3) & 7;
         int z = opcode & 7;
@@ -252,14 +260,14 @@ public class Z80OperationDecoder implements DebugAware {
             case 2:
                 return executor.resetBit(y, r8.get(z));
             case 3:
-                return executor.setBit(y, r8.get(z));
+                return (z == 6) ? executor.setBit_hl(y) : executor.setBit(y, r8.get(z));
             default:
                 throw new UnknownOperationException(String.format("Unknown opcode: %x", opcode), context);
 
         }
     }
 
-    private long decodeEDOperation(int opcode) {
+    private long decodeEDOperation() {
         int x = (opcode >> 6) & 3;
         int y = (opcode >> 3) & 7;
         int z = opcode & 7;
@@ -311,28 +319,20 @@ public class Z80OperationDecoder implements DebugAware {
         throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
     }
 
-    private long decodeIXIYOperation(int prefix, int opcode) {
+    private long decodeIXIYOperation() {
         if (opcode == 0xDD || opcode == 0xED || opcode == 0xFD) {
             // ignore this prefix
-            context.incrementAndGet(PC);
             return 4;
         }
 
         if (opcode == 0xCB) {
-            context.setHLRegisterMode(prefix == 0xDD ? IX : IY);
-            int offset = bus.readByteFromMemory(context.incrementAndGet(PC));
-            long result = decodeExtendedCBOperation(offset, bus.readByteFromMemory(context.incrementAndGet(PC)));
-            context.setHLRegisterMode(HL);
-            return result;
+            throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
         }
 
-        context.setHLRegisterMode(prefix == 0xDD ? IX : IY);
-        long result = decodeOneByteOperation(opcode);
-        context.setHLRegisterMode(HL);
-        return result;
+        throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
     }
 
-    private long decodeExtendedCBOperation(int offset, int opcode) {
+    private long decodeExtendedCBOperation(int offset) {
         int x = (opcode >> 6) & 3;
         int y = (opcode >> 3) & 7;
         int z = opcode & 7;

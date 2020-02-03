@@ -2,8 +2,13 @@ package com.zxrasp.emulator.core.z80;
 
 import com.zxrasp.emulator.core.EmulationException;
 import com.zxrasp.emulator.core.SystemBusDevice;
-import com.zxrasp.emulator.core.z80.z80internals.RegisterNames;
 import com.zxrasp.emulator.core.z80.z80internals.UnknownOperationException;
+
+import static com.zxrasp.emulator.core.z80.z80internals.Register16.DE;
+import static com.zxrasp.emulator.core.z80.z80internals.Register16.SP;
+import static com.zxrasp.emulator.core.z80.z80internals.Register8.C;
+import static com.zxrasp.emulator.core.z80.z80internals.Register8.E;
+import static com.zxrasp.emulator.core.z80.z80internals.RegisterSpecial.PC;
 
 public class Z80TestDecorator extends Z80 {
 
@@ -14,13 +19,13 @@ public class Z80TestDecorator extends Z80 {
     @Override
     public void reset() {
         super.reset();
-        context.set(RegisterNames.PC, 0x0100);
-        context.set(RegisterNames.SP, 0xFF00);
+        context.set(PC, 0x0100);
+        context.set(SP, 0xFF00);
     }
 
     @Override
     public long clock() throws UnknownOperationException {
-        if (context.get(RegisterNames.PC) == 0x5) {
+        if (context.get(PC) == 0x5) {
             handleSystemRequest();
         }
 
@@ -28,7 +33,7 @@ public class Z80TestDecorator extends Z80 {
     }
 
     private void handleSystemRequest() {
-        int syscall = context.get(RegisterNames.C);
+        int syscall = context.get(C);
         switch (syscall) {
             case 2:
                 printChar();
@@ -42,7 +47,7 @@ public class Z80TestDecorator extends Z80 {
     }
 
     private void printString() {
-        int strPtr = context.get(RegisterNames.DE);
+        int strPtr = context.get(DE);
 
         char c;
 
@@ -52,7 +57,7 @@ public class Z80TestDecorator extends Z80 {
     }
 
     private void printChar() {
-        char c = (char) context.get(RegisterNames.E);
+        char c = (char) context.get(E);
         System.out.print(c);
     }
 }

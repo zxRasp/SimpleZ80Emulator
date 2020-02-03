@@ -6,10 +6,6 @@ import static com.zxrasp.emulator.core.z80.z80internals.InterruptMode.IM_0;
 
 public class Z80Context implements Context {
 
-    public enum HLRegisterMode {
-        HL, IX, IY
-    }
-
     private int af;
     private int bc;
     private int de;
@@ -26,7 +22,6 @@ public class Z80Context implements Context {
     private boolean iff1, iff2;
     private InterruptMode interruptMode;
 
-    private HLRegisterMode hlRegisterMode;
     private boolean halted;
 
     public Z80Context() {
@@ -41,7 +36,6 @@ public class Z80Context implements Context {
         ir = 0;
         iff1 = iff2 = false;
         halted = false;
-        hlRegisterMode = HLRegisterMode.HL;
         interruptMode = IM_0;
     }
 
@@ -56,13 +50,10 @@ public class Z80Context implements Context {
     }
 
     @Override
-    public void set(RegisterNames register, int value) {
+    public void set(Register8 register, int value) {
         switch (register) {
             case A:
                 af = setHi8bit(af, value);
-                break;
-            case F:
-                af = setLo8bit(af, value);
                 break;
             case B:
                 bc = setHi8bit(bc, value);
@@ -82,68 +73,91 @@ public class Z80Context implements Context {
             case L:
                 hl = setLo8bit(hl, value);
                 break;
-            case I:
-                ir = setHi8bit(ir ,value);
-                break;
-            case R:
-                ir = setLo8bit(ir, value);
-                break;
+            default:
+                throw new EmulationException("Unknown register: " + register);
+        }
+    }
+
+    @Override
+    public void set(Register16 register, int value) {
+        switch (register) {
             case AF:
                 af = getLo16bit(value);
-                break;
-            case AF_:
-                af_ = getLo16bit(value);
                 break;
             case BC:
                 bc = getLo16bit(value);
                 break;
-            case BC_:
-                bc_ = getLo16bit(value);
-                break;
             case DE:
                 de = getLo16bit(value);
                 break;
-            case DE_:
-                de_ = getLo16bit(value);
-                break;
             case HL:
-                setHL(value);
-                break;
-            case HL_:
-                hl_ = getLo16bit(value);
-                break;
-            case PC:
-                pc = getLo16bit(value);
+                hl = getLo16bit(value);
                 break;
             case SP:
                 sp = getLo16bit(value);
-                break;
-            case IX:
-                ix = getLo16bit(value);
-                break;
-            case IY:
-                iy = getLo16bit(value);
                 break;
             default:
                 throw new EmulationException("Unknown register: " + register);
         }
     }
 
-    private int setLo8bit(int oldValue, int newValue) {
-        return (getLo8bit(newValue)) | (oldValue & 0xFF00);
-    }
-
-    private int setHi8bit(int oldValue, int newValue) {
-        return (getLo8bit(newValue) << 8) | (getLo8bit(oldValue));
+    @Override
+    public int get(Register16 register) {
+        switch (register) {
+            case AF:
+                return getLo16bit(af);
+            case BC:
+                return getLo16bit(bc);
+            case DE:
+                return getLo16bit(de);
+            case HL:
+                return getLo16bit(hl);
+            case SP:
+                return getLo16bit(sp);
+            default:
+                throw new EmulationException("Unknown register: " + register);
+        }
     }
 
     @Override
-    public int get(RegisterNames register) {
+    public void set(RegisterSpecial register, int value) {
+        switch (register) {
+            case PC:
+                pc = getLo16bit(value);
+                break;
+            case IX:
+                ix = getLo16bit(value);
+                break;
+            case IY:
+                iy = getLo16bit(value);
+            case I:
+                ir = setHi8bit(ir, getLo8bit(value));
+                break;
+            default:
+                throw new EmulationException("Unknown register: " + register);
+        }
+    }
+
+    @Override
+    public int get(RegisterSpecial register) {
+        switch (register) {
+            case PC:
+                return getLo16bit(pc);
+            case IX:
+                return getLo16bit(ix);
+            case IY:
+                return getLo16bit(iy);
+            case I:
+                return getHi8bit(ir);
+        }
+        throw new EmulationException("Unknown register: " + register);
+    }
+
+    @Override
+    public int get(Register8 register) {
         switch (register) {
             case A:
                 return getHi8bit(af);
-            case F:
-                return getLo8bit(af);
             case B:
                 return  getHi8bit(bc);
             case C:
@@ -153,120 +167,78 @@ public class Z80Context implements Context {
             case E:
                 return getLo8bit(de);
             case H:
-                return getHi8bit(getHL());
+                return getHi8bit(hl);
             case L:
-                return getLo8bit(getHL());
-            case I:
-                return getHi8bit(ir);
-            case R:
-                return getLo8bit(ir);
-            case AF:
-                return af;
-            case AF_:
-                return af_;
-            case BC:
-                return bc;
-            case BC_:
-                return bc_;
-            case DE:
-                return de;
-            case DE_:
-                return de_;
-            case HL:
-                return getHL();
-            case HL_:
-                return hl_;
-            case PC:
-                return pc;
-            case SP:
-                return sp;
-            case IX:
-                return ix;
-            case IY:
-                return iy;
+                return getLo8bit(hl);
             default:
                 throw new EmulationException("Unknown register: " + register);
         }
     }
 
-    private int getHL() {
-       switch (hlRegisterMode) {
-           case HL:
-               return hl;
-           case IX:
-               return ix;
-           case IY:
-               return iy;
-           default:
-               throw new Z80EmulationException();
-       }
-    }
-
-    private void setHL(int value) {
-        switch (hlRegisterMode) {
-            case HL:
-                hl = getLo16bit(value);
-                break;
-            case IX:
-                ix = getLo16bit(value);
-                break;
-            case IY:
-                iy = getLo16bit(value);
-                break;
-            default:
-                throw new Z80EmulationException();
-        }
-    }
-
-    public HLRegisterMode getHlRegisterMode() {
-        return hlRegisterMode;
-    }
-
+    @Override
     public void enableInterrupt() {
         iff1 = iff2 = true;
     }
 
-    void disableInterrupt() {
+    @Override
+    public void disableInterrupt() {
         iff1 = iff2 = false;
     }
 
-    public void swap(RegisterNames r1, RegisterNames r2) {
-        int tmp = get(r1);
-        set(r1, get(r2));
-        set(r2, tmp);
+    @Override
+    public void swap(Register16 register) {
+        int tmp = get(register);
+        set(register, getAlternativeRegister(register));
+        setAlternativeRegister(register, tmp);
     }
 
+    @Override
     public void setIM(InterruptMode mode) {
         this.interruptMode = mode;
     }
 
     @Override
-    public int incrementAndGet(RegisterNames register) {
-        set(register, get(register) + 1);
+    public int decrementAndGet(Register8 register) {
+        set(register, get(register) - 1);
         return get(register);
     }
 
     @Override
-    public int decrementAndGet(RegisterNames register) {
+    public int decrementAndGet(Register16 register) {
+        set(register, get(register) - 1);
+        return get(register);
+    }
+
+    @Override
+    public int decrementAndGet(RegisterSpecial register) {
         set(register, get(register) - 1);
         return get(register);
     }
 
     @Override
     public boolean get(Flags flag) {
-        return (get(RegisterNames.F) & flag.getMask()) != 0;
+        return (getLo8bit(af) & flag.getMask()) != 0;
     }
 
     @Override
     public void set(Flags flag, boolean value) {
         if (value)
-            set(RegisterNames.F, get(RegisterNames.F) | flag.getMask());
+            af = getLo8bit(getLo8bit(af) | flag.getMask());
         else
-            set(RegisterNames.F, get(RegisterNames.F) & ~flag.getMask());
+            af = getLo8bit(getLo8bit(af) & ~flag.getMask());
     }
 
-    public void setHLRegisterMode(HLRegisterMode hlRegisterMode) {
-        this.hlRegisterMode = hlRegisterMode;
+    @Override
+    public void incrementR() {
+        int r = getLo8bit(ir);
+        ir = setLo8bit(ir,r + 1);
+    }
+
+    @Override
+    public int getAndIncrement(RegisterSpecial register) {
+        int result = get(register);
+        set(register, result + 1);
+        return result;
     }
 
     private int getLo16bit(int value) {
@@ -279,6 +251,48 @@ public class Z80Context implements Context {
 
     private int getLo8bit(int value) {
         return value & 0xFF;
+    }
+
+    private int setLo8bit(int oldValue, int newValue) {
+        return (getLo8bit(newValue)) | (oldValue & 0xFF00);
+    }
+
+    private int setHi8bit(int oldValue, int newValue) {
+        return (getLo8bit(newValue) << 8) | (getLo8bit(oldValue));
+    }
+
+    private int getAlternativeRegister(Register16 register) {
+        switch (register) {
+            case AF:
+                return getLo16bit(af_);
+            case BC:
+                return getLo16bit(bc_);
+            case DE:
+                return getLo16bit(de_);
+            case HL:
+                return getLo16bit(hl_);
+            default:
+                throw new EmulationException("Unknown register: " + register);
+        }
+    }
+
+    private void setAlternativeRegister(Register16 register, int value) {
+        switch (register) {
+            case AF:
+                af_ = getLo16bit(value);
+                break;
+            case BC:
+                bc_ = getLo16bit(value);
+                break;
+            case DE:
+                de_ = getLo16bit(value);
+                break;
+            case HL:
+                hl_ = getLo16bit(value);
+                break;
+            default:
+                throw new EmulationException("Unknown register: " + register);
+        }
     }
 
     @Override
