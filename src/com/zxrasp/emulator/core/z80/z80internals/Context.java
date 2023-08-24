@@ -43,4 +43,8 @@ public interface Context {
     void incrementR();
 
     int getAndIncrement(RegisterSpecial register);
+
+    RegisterSpecial getCurrentAddressRegister();
+
+    void setCurrentAddressRegister(RegisterSpecial currentAddressRegister);
 }

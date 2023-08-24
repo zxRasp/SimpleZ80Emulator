@@ -47,8 +47,8 @@ public class Z80OperationDecoder implements DebugAware {
         im.put(7, IM_2);
     }
 
-    private Z80Context context;
-    private SystemBusDevice bus;
+    private final Z80Context context;
+    private final SystemBusDevice bus;
     private int prefix;
     private int opcode;
 
@@ -176,6 +176,12 @@ public class Z80OperationDecoder implements DebugAware {
                 if (y == 6 && z == 6) {
                     return executor.halt();
                 }
+                if (y == 6) {
+                    return executor.ld_hl_r8(r8.get(z));
+                }
+                if (z == 6) {
+                    return executor.ld_r8_hl(r8.get(y));
+                }
                 return executor.ld_r8_r8(r8.get(y), r8.get(z));
             case 2:
                 return executor.performALUOperation(ALUOperations.values()[y], r8.get(z));
@@ -242,8 +248,9 @@ public class Z80OperationDecoder implements DebugAware {
             case 0xED:
                 return decodeEDOperation();
             case 0xDD:
+                return decodeIXOperation();
             case 0xFD:
-                return decodeIXIYOperation();
+                return decodeIYOperation();
         }
 
         throw new UnknownOperationException(String.format("Unknown opcode: %x %x", prefix, opcode), context);
@@ -319,7 +326,7 @@ public class Z80OperationDecoder implements DebugAware {
         throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
     }
 
-    private long decodeIXIYOperation() {
+    private long decodeIXOperation() {
         if (opcode == 0xDD || opcode == 0xED || opcode == 0xFD) {
             // ignore this prefix
             return 4;
@@ -329,16 +336,59 @@ public class Z80OperationDecoder implements DebugAware {
             throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
         }
 
-        throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
+        long result = 0;
+        context.setCurrentAddressRegister(RegisterSpecial.IX);
+
+        if (opcode == 0xCB) {
+            byte offset = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            fetchOpcode();
+            result = decodeExtendedCBOperation(offset);
+        } else {
+            result = decodeOneByteOperation();
+        }
+
+        context.setCurrentAddressRegister(null);
+
+        return result;
     }
 
-    private long decodeExtendedCBOperation(int offset) {
+    private long decodeIYOperation() {
+        if (opcode == 0xDD || opcode == 0xED || opcode == 0xFD) {
+            // ignore this prefix
+            return 4;
+        }
+
+        long result = 0;
+        context.setCurrentAddressRegister(RegisterSpecial.IY);
+
+        if (opcode == 0xCB) {
+            byte offset = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            fetchOpcode();
+            result = decodeExtendedCBOperation(offset);
+        } else {
+            result = decodeOneByteOperation();
+        }
+
+        context.setCurrentAddressRegister(null);
+
+        return result;
+    }
+
+    private long decodeExtendedCBOperation(byte offset) {
         int x = (opcode >> 6) & 3;
         int y = (opcode >> 3) & 7;
         int z = opcode & 7;
 
 
         switch (x) {
+            case 1:
+                return executor.extendedTestBit(y, offset);
+            case 2:
+                if (z == 6) {
+                    return executor.extendedResetBit(y, offset);
+                } else {
+                    throw new UnknownOperationException(String.format("Unknown opcode: %X", opcode), context);
+                }
             case 3:
                 if (z == 6) {
                     return executor.extendedSetBit(y, offset);

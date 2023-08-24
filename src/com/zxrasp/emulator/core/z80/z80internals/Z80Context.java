@@ -21,8 +21,8 @@ public class Z80Context implements Context {
     private int ir;
     private boolean iff1, iff2;
     private InterruptMode interruptMode;
-
     private boolean halted;
+    private RegisterSpecial currentAddressRegister;
 
     public Z80Context() {
        reset();
@@ -37,6 +37,7 @@ public class Z80Context implements Context {
         iff1 = iff2 = false;
         halted = false;
         interruptMode = IM_0;
+        currentAddressRegister = null;
     }
 
     @Override
@@ -239,6 +240,14 @@ public class Z80Context implements Context {
         int result = get(register);
         set(register, result + 1);
         return result;
+    }
+
+    public RegisterSpecial getCurrentAddressRegister() {
+        return currentAddressRegister;
+    }
+
+    public void setCurrentAddressRegister(RegisterSpecial currentAddressRegister) {
+        this.currentAddressRegister = currentAddressRegister;
     }
 
     private int getLo16bit(int value) {

@@ -4,7 +4,6 @@ import com.zxrasp.emulator.core.spectrum.Spectrum48K;
 import com.zxrasp.emulator.core.test.TestMachine;
 import com.zxrasp.emulator.platform.SwingScreen;
 
-import java.awt.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -47,7 +46,7 @@ public class EmulationCore {
         }
 
         if (config.contains("zx")) {
-            Screen screen = new SwingScreen(romName, new Dimension(800, 600));
+            Screen screen = new SwingScreen(romName);
             systemBoard = new Spectrum48K(screen, romName);
         } else {
             systemBoard = new TestMachine();

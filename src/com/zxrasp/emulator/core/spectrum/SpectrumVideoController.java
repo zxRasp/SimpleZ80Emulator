@@ -17,8 +17,8 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
     private static final int BRIGHT_COLOR = 255;
     private static final int NORMAL_COLOR = 205;
 
-    private SystemBusDevice bus;
-    private Screen screen;
+    private final SystemBusDevice bus;
+    private final Screen screen;
 
     private int frameCount = 0;
     private boolean isInverse = false;

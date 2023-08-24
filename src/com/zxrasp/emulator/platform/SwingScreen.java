@@ -9,22 +9,17 @@ import java.awt.image.MemoryImageSource;
 
 public class SwingScreen extends JFrame implements Screen, SpectrumScreenMetrics {
 
-    private int[] screenBuffer;
-    private MemoryImageSource mis;
-    private Image image;
+    private final int[] screenBuffer;
+    private final MemoryImageSource mis;
+    private final Image image;
 
-    private int screenX, screenY;
-
-    public SwingScreen(String title, Dimension windowSize) throws HeadlessException {
+    public SwingScreen(String title) throws HeadlessException {
         super(title);
 
         screenBuffer = new int[SCAN_LINES * PIXEL_PER_LINE];
         mis = new MemoryImageSource(PIXEL_PER_LINE, SCAN_LINES, screenBuffer, 0, PIXEL_PER_LINE);
         mis.setAnimated(true);
         image = createImage(mis);
-
-        screenX = (windowSize.width - PIXEL_PER_LINE) / 2;
-        screenY = (windowSize.height - SCAN_LINES) / 2;
 
         setSize(PIXEL_PER_LINE * 2, SCAN_LINES * 2);
         setMinimumSize(new Dimension(PIXEL_PER_LINE, SCAN_LINES));

@@ -14,8 +14,8 @@ public class TestMachine extends SystemBoard {
 
     private static final int PAGE_SIZE = 64 * 1024;
 
-    private Z80 cpu;
-    private RAMPage page;
+    private final Z80 cpu;
+    private final RAMPage page;
 
     public TestMachine() {
         cpu = new Z80TestDecorator(this);

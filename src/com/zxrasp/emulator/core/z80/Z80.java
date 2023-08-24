@@ -1,5 +1,7 @@
 package com.zxrasp.emulator.core.z80;
 
+import static com.zxrasp.emulator.core.z80.z80internals.RegisterSpecial.*;
+
 import com.zxrasp.emulator.core.CPU;
 import com.zxrasp.emulator.core.DebugAware;
 import com.zxrasp.emulator.core.SystemBusDevice;

@@ -70,9 +70,16 @@ public class OperationExecutor {
     public long ld_16(Register16 register) {
         int pc = context.get(PC);
         int word = bus.readWordFromMemory(pc);
-        context.set(register, word);
+        RegisterSpecial addressRegister = context.getCurrentAddressRegister();
         context.set(PC, pc + 2);
-        return 10;
+
+        if (register == HL && addressRegister != null) {
+            context.set(addressRegister, word);
+            return 14;
+        } else {
+            context.set(register, word);
+            return 10;
+        }
     }
 
     public long add_to_hl(Register16 register) {
@@ -131,7 +138,14 @@ public class OperationExecutor {
         int pc = context.get(PC);
         int address = bus.readWordFromMemory(pc);
         int value = bus.readWordFromMemory(address);
-        context.set(HL, value);
+        RegisterSpecial dest = context.getCurrentAddressRegister();
+
+        if (dest == null) {
+            context.set(HL, value);
+        } else {
+            context.set(dest, value);
+        }
+
         context.set(PC, pc + 2);
         return 20;
     }
@@ -156,28 +170,28 @@ public class OperationExecutor {
     }
 
     public long inc8(Register8 register) {
-        int value = context.get(register);
+        byte value = (byte) context.get(register);
         setALUFlags(++value);
         context.set(register, value);
         return 4;
     }
 
     public long inc8_hl() {
-        int value = readByteFromMemoryHL();
+        byte value = (byte) readByteFromMemoryHL();
         setALUFlags(++value);
         writeByteToMemoryHL(value);
         return 11;
     }
 
     public long dec8(Register8 register) {
-        int value = context.get(register);
+        byte value = (byte) context.get(register);
         setALUFlags(--value);
         context.set(register, value);
         return 4;
     }
 
     public long dec8_hl() {
-        int value = readByteFromMemoryHL();
+        byte value = (byte) readByteFromMemoryHL();
         setALUFlags(--value);
         writeByteToMemoryHL(value);
         return 11;
@@ -255,14 +269,14 @@ public class OperationExecutor {
     }
 
     public long performALUOperation(ALUOperations operation, Register8 register){
-        int value = context.get(register);
+        byte value = (byte) context.get(register);
         performALUOperation(operation, value);
         return 4;
     }
 
     public long performALUOperation(ALUOperations operation) {
         int pc = context.get(PC);
-        int value = bus.readByteFromMemory(pc + 1);
+        byte value = (byte) bus.readByteFromMemory(pc + 1);
 
         performALUOperation(operation, value);
         context.set(PC, pc + 2);
@@ -270,52 +284,57 @@ public class OperationExecutor {
         return 7;
     }
 
-    private void performALUOperation(ALUOperations operation, int value) {
-        int acc = context.get(A);
-        int result;
+    private void performALUOperation(ALUOperations operation, byte value) {
+        byte acc = (byte) context.get(A);
+        byte result;
 
         switch (operation) {
             case ADD_A:
-                result = acc + value;
+                result = (byte) (acc + value);
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case ADC_A:
-                result = acc + value + (context.get(Flags.C) ? 1 : 0);
+                result = (byte) (acc + value + (context.get(Flags.C) ? 1 : 0));
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case SUB:
-                result = acc - value;
+                result = (byte) (acc - value);
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case SUBC_A:
-                result = acc - value - (context.get(Flags.C) ? 1 : 0);
+                int raw_result = acc - value - (context.get(Flags.C) ? 1 : 0);
+                result = (byte) raw_result;
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case AND:
-                result = acc & value;
+                result = (byte) (acc & value);
                 setALUFlags(result);
+                context.set(Flags.C, false);
+                context.set(Flags.N, false);
+                context.set(Flags.H, true);
+                // todo: set parity
                 context.set(A, result);
                 break;
             case XOR:
-                result = acc ^ value;
+                result = (byte) (acc ^ value);
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case OR:
-                result = acc | value;
+                result = (byte) (acc | value);
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case CP:
-                setALUFlags(acc - value);
+                setALUFlags((byte) (acc - value));
         }
     }
 
-    private void setALUFlags(int operationResult) {
+    private void setALUFlags(byte operationResult) {
         context.set(Flags.Z, operationResult == 0);
         context.set(Flags.S, operationResult < 0);
     }
@@ -565,11 +584,52 @@ public class OperationExecutor {
         return 15;
     }
 
-    public long extendedSetBit(int bit, int offset) {
-        int address = context.get(HL) + offset;
+    public long extendedSetBit(int bit, byte offset) {
+        RegisterSpecial dst = context.getCurrentAddressRegister();
+        int address;
+
+        if (dst == null) {
+            address = context.get(HL) + offset;
+        } else {
+            address = context.get(dst) + offset;
+        }
+
         int value = bus.readByteFromMemory(address);
         bus.writeByteToMemory(address, value | (1 << bit));
         return 23;
+    }
+
+    public long extendedResetBit(int bit, byte offset) {
+        RegisterSpecial dst = context.getCurrentAddressRegister();
+        int address;
+
+        if (dst == null) {
+            address = context.get(HL) + offset;
+        } else {
+            address = context.get(dst) + offset;
+        }
+
+        int value = bus.readByteFromMemory(address);
+        bus.writeByteToMemory(address, value & ~(1 << bit));
+        return 23;
+    }
+
+    public long extendedTestBit(int bit, byte offset) {
+        RegisterSpecial dst = context.getCurrentAddressRegister();
+        int address;
+
+        if (dst == null) {
+            address = context.get(HL) + offset;
+        } else {
+            address = context.get(dst) + offset;
+        }
+
+        int value = bus.readByteFromMemory(address);
+        int result = (value >>> bit) & 1;
+        context.set(Flags.N, false);
+        context.set(Flags.H, true);
+        context.set(Flags.Z, result == 0);
+        return 20;
     }
 
     private int readByteFromMemoryHL() {
@@ -580,5 +640,35 @@ public class OperationExecutor {
     private void writeByteToMemoryHL(int value) {
         int address = context.get(HL);
         bus.writeByteToMemory(address, value);
+    }
+
+    public long ld_hl_r8(Register8 src) {
+        RegisterSpecial addressRegister = context.getCurrentAddressRegister();
+
+        if (addressRegister == null) {
+            int address = context.get(HL);
+            bus.writeByteToMemory(address, context.get(src));
+            return 7;
+        } else {
+            byte displacement = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            int address = context.get(addressRegister) + displacement;
+            bus.writeByteToMemory(address, context.get(src));
+            return 19;
+        }
+    }
+
+    public long ld_r8_hl(Register8 dst) {
+        RegisterSpecial addressRegister = context.getCurrentAddressRegister();
+
+        if (addressRegister == null) {
+            int address = context.get(HL);
+            context.set(dst, bus.readByteFromMemory(address));
+            return 7;
+        } else {
+            byte displacement = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            int address = context.get(addressRegister) + displacement;
+            context.set(dst, bus.readByteFromMemory(address));
+            return 19;
+        }
     }
 }
