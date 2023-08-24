@@ -223,10 +223,12 @@ public class Z80Context implements Context {
 
     @Override
     public void set(Flags flag, boolean value) {
+        int oldValue = af;
+
         if (value)
-            af = getLo8bit(getLo8bit(af) | flag.getMask());
+            af = setLo8bit(oldValue, oldValue | flag.getMask());
         else
-            af = getLo8bit(getLo8bit(af) & ~flag.getMask());
+            af = setLo8bit(oldValue, oldValue & ~flag.getMask());
     }
 
     @Override

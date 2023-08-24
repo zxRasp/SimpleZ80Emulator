@@ -269,7 +269,7 @@ public class OperationExecutor {
     }
 
     public long performALUOperation(ALUOperations operation, Register8 register){
-        byte value = (byte) context.get(register);
+        int value = context.get(register);
         performALUOperation(operation, value);
         return 4;
     }
@@ -284,34 +284,33 @@ public class OperationExecutor {
         return 7;
     }
 
-    private void performALUOperation(ALUOperations operation, byte value) {
+    private void performALUOperation(ALUOperations operation, int value) {
         byte acc = (byte) context.get(A);
-        byte result;
+        int result;
 
         switch (operation) {
             case ADD_A:
-                result = (byte) (acc + value);
+                result = acc + value;
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case ADC_A:
-                result = (byte) (acc + value + (context.get(Flags.C) ? 1 : 0));
+                result = acc + value + (context.get(Flags.C) ? 1 : 0);
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case SUB:
-                result = (byte) (acc - value);
+                result = acc - value;
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case SUBC_A:
-                int raw_result = acc - value - (context.get(Flags.C) ? 1 : 0);
-                result = (byte) raw_result;
+                result = acc - value - (context.get(Flags.C) ? 1 : 0);
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case AND:
-                result = (byte) (acc & value);
+                result = acc & value;
                 setALUFlags(result);
                 context.set(Flags.C, false);
                 context.set(Flags.N, false);
@@ -320,23 +319,25 @@ public class OperationExecutor {
                 context.set(A, result);
                 break;
             case XOR:
-                result = (byte) (acc ^ value);
+                result = acc ^ value;
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case OR:
-                result = (byte) (acc | value);
+                result = acc | value;
                 setALUFlags(result);
                 context.set(A, result);
                 break;
             case CP:
-                setALUFlags((byte) (acc - value));
+                result = acc - value;
+                setALUFlags(result);
         }
     }
 
-    private void setALUFlags(byte operationResult) {
+    private void setALUFlags(int operationResult) {
         context.set(Flags.Z, operationResult == 0);
         context.set(Flags.S, operationResult < 0);
+        context.set(Flags.C, operationResult < 0 || operationResult > 0xFF);
     }
 
     public long ret_cc(Conditions condition) {
@@ -471,7 +472,7 @@ public class OperationExecutor {
     }
 
     private long ldir() {
-        int result = 5;
+        long result = 5;
         do {
             result += ldi();
         } while (context.get(BC) != 0);
@@ -493,7 +494,7 @@ public class OperationExecutor {
     }
 
     private long lddr() {
-        int result = 5;
+        long result = 5;
         do {
             result += ldd();
         } while (context.get(BC) != 0);
