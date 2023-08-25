@@ -84,9 +84,11 @@ public class OperationExecutor {
 
     public long add_to_hl(Register16 register) {
         int hl = context.get(HL);
-        int rvalue = context.get(register);
-        context.set(HL, hl + rvalue);
-        // todo: set flags
+        int result = hl + context.get(register);
+        context.set(HL, result);
+        context.set(Flags.C, result < 0 || result > 0xFFFF);
+        context.set(Flags.N, false);
+        //fixme: context.set(Flags.H, false);
         return 11;
     }
 
@@ -192,8 +194,13 @@ public class OperationExecutor {
 
     public long dec8_hl() {
         byte value = (byte) readByteFromMemoryHL();
-        setALUFlags(--value);
+        --value;
         writeByteToMemoryHL(value);
+        context.set(Flags.N, true);
+        context.set(Flags.Z, value == 0);
+        context.set(Flags.S, value < 0);
+        //fixme: context.set(Flags.H, false);
+        //fixme: context.set(Flags.PV, false);
         return 11;
     }
 
@@ -215,17 +222,26 @@ public class OperationExecutor {
 
     public long rlca() {
         int a = context.get(A);
-        int c = a & 0x80;
+        int c = a >> 7;
         a <<= 1;
         a |= c;
         context.set(A, a);
-        // todo: set c to CARRY flag
+        context.set(Flags.C, c == 1);
+        context.set(Flags.H, false);
+        context.set(Flags.N, false);
         return 4;
     }
 
     public long rrca() {
-        // todo
-        throw new EmulationException("Not implemented yet");
+        int a = context.get(A);
+        int c = a & 1;
+        a >>= 1;
+        a |= (c << 7);
+        context.set(A, a);
+        context.set(Flags.C, c == 1);
+        context.set(Flags.H, false);
+        context.set(Flags.N, false);
+        return 4;
     }
 
     public long rla() {
@@ -254,8 +270,10 @@ public class OperationExecutor {
     }
 
     public long ccf() {
-        // todo
-        throw new EmulationException("Not implemented yet");
+        context.set(Flags.C, !context.get(Flags.C));
+        context.set(Flags.H, !context.get(Flags.H));
+        context.set(Flags.N, false);
+        return 4;
     }
 
     public long halt() {
@@ -315,7 +333,9 @@ public class OperationExecutor {
                 context.set(Flags.C, false);
                 context.set(Flags.N, false);
                 context.set(Flags.H, true);
-                // todo: set parity
+                context.set(Flags.Z, result == 0);
+                context.set(Flags.S, result < 0);
+                context.set(Flags.PV, (Integer.bitCount(result & 0xFF) & 1) == 0);
                 context.set(A, result);
                 break;
             case XOR:
@@ -532,7 +552,13 @@ public class OperationExecutor {
 
     public long sbc_hl_rp(Register16 register) {
         int carry = context.get(Flags.C) ? 1 : 0;
-        context.set(HL, context.get(HL) - context.get(register) - carry);
+        int result = context.get(HL) - context.get(register) - carry;
+        context.set(HL, result);
+        context.set(Flags.S, result < 0);
+        context.set(Flags.Z, result == 0);
+        context.set(Flags.C, result > 0xFFFF);
+        context.set(Flags.PV, result < 0 || result > 0xFFFF);
+        context.set(Flags.N, true);
         return 15;
     }
 
