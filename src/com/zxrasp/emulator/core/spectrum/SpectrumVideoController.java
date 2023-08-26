@@ -31,7 +31,6 @@ public class SpectrumVideoController implements VideoController, SpectrumScreenM
 
     @Override
     public void drawFrame(long ticks) {
-
         ++frameCount;
 
         if (frameCount > 16) {

@@ -172,35 +172,46 @@ public class OperationExecutor {
     }
 
     public long inc8(Register8 register) {
-        byte value = (byte) context.get(register);
-        setALUFlags(++value);
-        context.set(register, value);
+        int result = context.get(register) + 1;
+        context.set(register, result);
+        context.set(Flags.S, checkSign8(result));
+        context.set(Flags.Z, result == 0);
+        //fixme: context.set(Flags.H, true);
+        context.set(Flags.PV, result == 0x80);
+        context.set(Flags.N, false);
         return 4;
     }
 
     public long inc8_hl() {
-        byte value = (byte) readByteFromMemoryHL();
-        setALUFlags(++value);
-        writeByteToMemoryHL(value);
+        int result = readByteFromMemoryHL() + 1;
+        context.set(Flags.S, checkSign8(result));
+        context.set(Flags.Z, result == 0);
+        //fixme: context.set(Flags.H, true);
+        context.set(Flags.PV, result == 0x80);
+        context.set(Flags.N, false);
+        writeByteToMemoryHL(result);
         return 11;
     }
 
     public long dec8(Register8 register) {
-        byte value = (byte) context.get(register);
-        setALUFlags(--value);
-        context.set(register, value);
+        int result = context.get(register) - 1;
+        context.set(Flags.S, result < 0);
+        context.set(Flags.Z, result == 0);
+        //fixme: context.set(Flags.H, false);
+        context.set(Flags.PV, result == 0x7F);
+        context.set(Flags.N, true);
+        context.set(register, result);
         return 4;
     }
 
     public long dec8_hl() {
-        byte value = (byte) readByteFromMemoryHL();
-        --value;
-        writeByteToMemoryHL(value);
-        context.set(Flags.N, true);
-        context.set(Flags.Z, value == 0);
-        context.set(Flags.S, value < 0);
+        int result = readByteFromMemoryHL() - 1;
+        context.set(Flags.S, result < 0);
+        context.set(Flags.Z, result == 0);
         //fixme: context.set(Flags.H, false);
-        //fixme: context.set(Flags.PV, false);
+        context.set(Flags.PV, result == 0x7F);
+        context.set(Flags.N, true);
+        writeByteToMemoryHL(result);
         return 11;
     }
 
@@ -294,7 +305,7 @@ public class OperationExecutor {
 
     public long performALUOperation(ALUOperations operation) {
         int pc = context.get(PC);
-        byte value = (byte) bus.readByteFromMemory(pc + 1);
+        int value = bus.readByteFromMemory(pc + 1);
 
         performALUOperation(operation, value);
         context.set(PC, pc + 2);
@@ -303,61 +314,98 @@ public class OperationExecutor {
     }
 
     private void performALUOperation(ALUOperations operation, int value) {
-        byte acc = (byte) context.get(A);
+        int acc = context.get(A);
+        int carry = context.get(Flags.C) ? 1 : 0;
         int result;
 
         switch (operation) {
             case ADD_A:
                 result = acc + value;
-                setALUFlags(result);
                 context.set(A, result);
+                context.set(Flags.S, checkSign8(result));
+                context.set(Flags.Z, result == 0);
+                context.set(Flags.N, false);
+                //fixme: context.set(Flags.H, true);
+                context.set(Flags.PV, result > 0xFF);
+                context.set(Flags.C, acc > 0xFF - value);
                 break;
             case ADC_A:
-                result = acc + value + (context.get(Flags.C) ? 1 : 0);
-                setALUFlags(result);
+                result = acc + value + carry;
                 context.set(A, result);
+                context.set(Flags.S, checkSign8(result));
+                context.set(Flags.Z, result == 0);
+                context.set(Flags.N, false);
+                //fixme: context.set(Flags.H, true);
+                context.set(Flags.PV, result > 0xFF);
+                context.set(Flags.C, acc > 0xFF - value - carry);
                 break;
             case SUB:
                 result = acc - value;
-                setALUFlags(result);
                 context.set(A, result);
+                context.set(Flags.S, checkSign8(result));
+                context.set(Flags.Z, result == 0);
+                context.set(Flags.N, true);
+                //fixme: context.set(Flags.H, true);
+                context.set(Flags.PV, result > 0xFF);
+                context.set(Flags.C, value > acc);
                 break;
             case SUBC_A:
-                result = acc - value - (context.get(Flags.C) ? 1 : 0);
-                setALUFlags(result);
+                result = acc - value - carry;
                 context.set(A, result);
+                context.set(Flags.S, checkSign8(result));
+                context.set(Flags.Z, result == 0);
+                context.set(Flags.N, true);
+                //fixme: context.set(Flags.H, true);
+                context.set(Flags.PV, result > 0xFF);
+                context.set(Flags.C, value + carry > acc);
                 break;
             case AND:
                 result = acc & value;
-                setALUFlags(result);
                 context.set(Flags.C, false);
                 context.set(Flags.N, false);
                 context.set(Flags.H, true);
                 context.set(Flags.Z, result == 0);
-                context.set(Flags.S, result < 0);
-                context.set(Flags.PV, (Integer.bitCount(result & 0xFF) & 1) == 0);
+                context.set(Flags.S, checkSign8(result));
+                context.set(Flags.PV, checkParity(result));
                 context.set(A, result);
                 break;
             case XOR:
                 result = acc ^ value;
-                setALUFlags(result);
                 context.set(A, result);
+                context.set(Flags.S, checkSign8(result));
+                context.set(Flags.Z, result == 0);
+                context.set(Flags.H, false);
+                context.set(Flags.PV, checkParity(result));
+                context.set(Flags.N, false);
+                context.set(Flags.C, false);
                 break;
             case OR:
                 result = acc | value;
-                setALUFlags(result);
                 context.set(A, result);
+                context.set(Flags.C, false);
+                context.set(Flags.N, false);
+                context.set(Flags.H, false);
+                context.set(Flags.Z, result == 0);
+                context.set(Flags.S, checkSign8(result));
+                context.set(Flags.PV, checkParity(result));
                 break;
             case CP:
                 result = acc - value;
-                setALUFlags(result);
+                context.set(Flags.S, checkSign8(result));
+                context.set(Flags.Z, result == 0);
+                context.set(Flags.N, true);
+                //fixme: context.set(Flags.H, true);
+                context.set(Flags.PV, result > 0xFF);
+                context.set(Flags.C, value > acc);
         }
     }
 
-    private void setALUFlags(int operationResult) {
-        context.set(Flags.Z, operationResult == 0);
-        context.set(Flags.S, operationResult < 0);
-        context.set(Flags.C, operationResult < 0 || operationResult > 0xFF);
+    private boolean checkParity(int value) {
+        return (Integer.bitCount(value & 0xFF) & 1) == 0;
+    }
+
+    private boolean checkSign8(int value) {
+        return (value & 0x80) != 0;
     }
 
     public long ret_cc(Conditions condition) {
@@ -434,8 +482,9 @@ public class OperationExecutor {
     }
 
     public long rst(int n) {
-        bus.writeWordToMemory(context.decrementAndGet(SP), context.get(PC));
-        context.decrementAndGet(SP);
+        int sp = context.get(SP) - 2;
+        bus.writeWordToMemory(sp, context.get(PC));
+        context.set(SP, sp);
         context.set(PC, n);
         return 11;
     }

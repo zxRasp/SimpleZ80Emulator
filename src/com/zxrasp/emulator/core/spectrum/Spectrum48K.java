@@ -13,15 +13,14 @@ import java.util.Random;
 public class Spectrum48K extends SystemBoard {
 
     private static final int DEFAULT_PAGE_SIZE = 16384;
-
     private static final int TICKS_PER_FRAME = 69000;
     private static final int FRAME_TIME = 1000 / 50;
 
-    private Memory[] pages;
+    private final Memory[] pages;
+    private final Z80 cpu;
+    private final VideoController videoController;
 
     private int portFE;
-    private Z80 cpu;
-    private VideoController videoController;
     private long cpuTicks;
     private long frameStartTime;
     private long actualFrameTime;
@@ -87,7 +86,7 @@ public class Spectrum48K extends SystemBoard {
                 try {
                     Thread.sleep(FRAME_TIME - actualFrameTime);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    // nothing to do
                 }
             }
 
