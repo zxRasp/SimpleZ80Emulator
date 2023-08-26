@@ -195,7 +195,7 @@ public class OperationExecutor {
 
     public long dec8(Register8 register) {
         int result = context.get(register) - 1;
-        context.set(Flags.S, result < 0);
+        context.set(Flags.S, checkSign8(result));
         context.set(Flags.Z, result == 0);
         //fixme: context.set(Flags.H, false);
         context.set(Flags.PV, result == 0x7F);
@@ -206,7 +206,7 @@ public class OperationExecutor {
 
     public long dec8_hl() {
         int result = readByteFromMemoryHL() - 1;
-        context.set(Flags.S, result < 0);
+        context.set(Flags.S, checkSign8(result));
         context.set(Flags.Z, result == 0);
         //fixme: context.set(Flags.H, false);
         context.set(Flags.PV, result == 0x7F);
@@ -528,47 +528,61 @@ public class OperationExecutor {
     private long ldi() {
         int de = context.get(DE);
         int hl = context.get(HL);
+        int bc = context.get(BC);
 
         int val = bus.readByteFromMemory(hl);
         bus.writeByteToMemory(de, val);
 
         context.set(DE, de + 1);
         context.set(HL, hl + 1);
-        context.decrementAndGet(BC);
+        context.set(BC, bc - 1);
 
-        // todo: set flags
+        context.set(Flags.H, false);
+        context.set(Flags.PV, bc - 1 != 0);
+        context.set(Flags.N, false);
+
         return 16;
     }
 
     private long ldir() {
-        long result = 5;
-        do {
-            result += ldi();
-        } while (context.get(BC) != 0);
+        long result = ldi();
 
-        return result;
+        if (context.get(BC) == 0) {
+            return result;
+        }
+
+        context.set(PC, context.get(PC) - 2);
+        return result + 5;
     }
 
     private long ldd() {
         int hl = context.get(HL);
         int de = context.get(DE);
+        int bc = context.get(BC);
 
         int val = bus.readByteFromMemory(hl);
         bus.writeByteToMemory(de, val);
 
         context.set(HL, hl - 1);
         context.set(DE, de - 1);
-        context.decrementAndGet(BC);
+        context.set(BC, bc - 1);
+
+        context.set(Flags.H, false);
+        context.set(Flags.PV, bc - 1 != 0);
+        context.set(Flags.N, false);
+
         return 16;
     }
 
     private long lddr() {
-        long result = 5;
-        do {
-            result += ldd();
-        } while (context.get(BC) != 0);
+        long result = ldd();
 
-        return result;
+        if (context.get(BC) == 0) {
+            return result;
+        }
+
+        context.set(PC, context.get(PC) - 2);
+        return result + 5;
     }
 
     public long out_n_a() {
