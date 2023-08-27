@@ -184,7 +184,7 @@ public class Z80OperationDecoder implements DebugAware {
                 }
                 return executor.ld_r8_r8(r8.get(y), r8.get(z));
             case 2:
-                return executor.performALUOperation(ALUOperations.values()[y], r8.get(z));
+                return z == 6 ? executor.performALUOperationHL(ALUOperations.values()[y]) : executor.performALUOperationR8(ALUOperations.values()[y], r8.get(z));
             case 3:
                 switch (z) {
                     case 0:
@@ -232,7 +232,7 @@ public class Z80OperationDecoder implements DebugAware {
                                 return executor.call_nn();
                         }
                     case 6:
-                        return executor.performALUOperation(ALUOperations.values()[y]);
+                        return executor.performALUOperationNN(ALUOperations.values()[y]);
                     case 7:
                         return executor.rst(y << 3);
                 }

@@ -6,6 +6,8 @@ import com.zxrasp.emulator.core.SystemBusDevice;
 import static com.zxrasp.emulator.core.z80.z80internals.Register16.*;
 import static com.zxrasp.emulator.core.z80.z80internals.Register8.*;
 import static com.zxrasp.emulator.core.z80.z80internals.RegisterSpecial.I;
+import static com.zxrasp.emulator.core.z80.z80internals.RegisterSpecial.IX;
+import static com.zxrasp.emulator.core.z80.z80internals.RegisterSpecial.IY;
 import static com.zxrasp.emulator.core.z80.z80internals.RegisterSpecial.PC;
 
 public class OperationExecutor {
@@ -183,14 +185,31 @@ public class OperationExecutor {
     }
 
     public long inc8_hl() {
-        int result = readByteFromMemoryHL() + 1;
-        context.set(Flags.S, checkSign8(result));
-        context.set(Flags.Z, result == 0);
+        long result;
+        int value;
+        RegisterSpecial addressRegister = context.getCurrentAddressRegister();
+
+        if (addressRegister == IX || addressRegister == IY) {
+            byte offset = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            int address = context.get(addressRegister) + offset;
+            value = bus.readByteFromMemory(address) + 1;
+            bus.writeByteToMemory(address, value);
+            result = 23;
+        } else if (addressRegister == null) {
+            value = readByteFromMemoryHL() + 1;
+            writeByteToMemoryHL(value);
+            result = 11;
+        } else {
+            throw new EmulationException("Unexpected address register value: " + addressRegister);
+        }
+
+        context.set(Flags.S, checkSign8(value));
+        context.set(Flags.Z, value == 0);
         //fixme: context.set(Flags.H, true);
-        context.set(Flags.PV, result == 0x80);
+        context.set(Flags.PV, value == 0x80);
         context.set(Flags.N, false);
-        writeByteToMemoryHL(result);
-        return 11;
+
+        return result;
     }
 
     public long dec8(Register8 register) {
@@ -205,14 +224,31 @@ public class OperationExecutor {
     }
 
     public long dec8_hl() {
-        int result = readByteFromMemoryHL() - 1;
-        context.set(Flags.S, checkSign8(result));
-        context.set(Flags.Z, result == 0);
+        RegisterSpecial addressRegister = context.getCurrentAddressRegister();
+        long result;
+        int value;
+
+        if (addressRegister == IX || addressRegister == IY) {
+            byte offset = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            int address = context.get(addressRegister) + offset;
+            value = bus.readByteFromMemory(address) - 1;
+            bus.writeByteToMemory(address, value);
+            result = 23;
+        } else if (addressRegister == null) {
+            value = readByteFromMemoryHL() - 1;
+            writeByteToMemoryHL(value);
+            result = 11;
+        } else {
+            throw new EmulationException("Unexpected address register value: " + addressRegister);
+        }
+
+        context.set(Flags.S, checkSign8(value));
+        context.set(Flags.Z, value == 0);
         //fixme: context.set(Flags.H, false);
-        context.set(Flags.PV, result == 0x7F);
+        context.set(Flags.PV, value == 0x7F);
         context.set(Flags.N, true);
-        writeByteToMemoryHL(result);
-        return 11;
+
+        return result;
     }
 
     public long ld_8(Register8 register) {
@@ -224,11 +260,21 @@ public class OperationExecutor {
     }
 
     public long ld_8_hl() {
-        int pc = context.get(PC);
-        int value = bus.readByteFromMemory(pc);
-        writeByteToMemoryHL(value);
-        context.set(PC, pc + 1);
-        return 10;
+        RegisterSpecial addressRegister = context.getCurrentAddressRegister();
+
+        if (addressRegister == IX || addressRegister == IY) {
+            byte offset = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            int address = context.get(addressRegister) + offset;
+            int value = bus.readByteFromMemory(context.getAndIncrement(PC));
+            bus.writeByteToMemory(address, value);
+            return 19;
+        } else if (addressRegister == null) {
+            int value = bus.readByteFromMemory(context.getAndIncrement(PC));
+            bus.writeByteToMemory(context.get(HL), value);
+            return 10;
+        } else {
+            throw new EmulationException("Unexpected address register: " + addressRegister);
+        }
     }
 
     public long rlca() {
@@ -297,19 +343,33 @@ public class OperationExecutor {
         return 4;
     }
 
-    public long performALUOperation(ALUOperations operation, Register8 register){
+    public long performALUOperationR8(ALUOperations operation, Register8 register){
         int value = context.get(register);
         performALUOperation(operation, value);
         return 4;
     }
 
-    public long performALUOperation(ALUOperations operation) {
-        int pc = context.get(PC);
-        int value = bus.readByteFromMemory(pc + 1);
+    public long performALUOperationHL(ALUOperations operation) {
+        RegisterSpecial addressRegister = context.getCurrentAddressRegister();
 
+        if (addressRegister == null) {
+            int value = readByteFromMemoryHL();
+            performALUOperation(operation, value);
+            return 7;
+        } else if (addressRegister == IX || addressRegister == IY) {
+            byte offset = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            int address = context.get(addressRegister) + offset;
+            int value = bus.readByteFromMemory(address);
+            performALUOperation(operation, value);
+            return 19;
+        } else {
+            throw new EmulationException("Unexpected address register: " + addressRegister);
+        }
+    }
+
+    public long performALUOperationNN(ALUOperations operation) {
+        int value = bus.readByteFromMemory(context.getAndIncrement(PC));
         performALUOperation(operation, value);
-        context.set(PC, pc + 2);
-
         return 7;
     }
 
@@ -754,11 +814,13 @@ public class OperationExecutor {
             int address = context.get(HL);
             context.set(dst, bus.readByteFromMemory(address));
             return 7;
-        } else {
-            byte displacement = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
-            int address = context.get(addressRegister) + displacement;
+        } else if (addressRegister == IX || addressRegister == IY) {
+            byte offset = (byte) bus.readByteFromMemory(context.getAndIncrement(PC));
+            int address = context.get(addressRegister) + offset;
             context.set(dst, bus.readByteFromMemory(address));
             return 19;
+        } else {
+            throw new EmulationException("Unexpected address register: " + addressRegister);
         }
     }
 }
