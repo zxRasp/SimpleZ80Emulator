@@ -213,6 +213,8 @@ public class Z80OperationDecoder implements DebugAware {
                                 return executor.jp_nn();
                             case 2:
                                 return executor.out_n_a();
+                            case 4:
+                                return executor.ex_sp_hl();
                             case 5:
                                 return executor.ex_de_hl();
                             case 6:
@@ -223,7 +225,7 @@ public class Z80OperationDecoder implements DebugAware {
                                 throw  new UnknownOperationException(String.format("Unknown opcode: %x", opcode), context);
                         }
                     case 4:
-                        throw  new UnknownOperationException(String.format("Unknown opcode: %x", opcode), context);
+                        return executor.call_cc_nn(Conditions.values()[y]);
                     case 5:
                         switch(q) {
                             case 0:
@@ -263,9 +265,9 @@ public class Z80OperationDecoder implements DebugAware {
 
         switch (x) {
             case 1:
-                return executor.testBit(y, r8.get(z));
+                return (z == 6) ? executor.testBit_hl(y) : executor.testBit(y, r8.get(z));
             case 2:
-                return executor.resetBit(y, r8.get(z));
+                return (z == 6) ? executor.resetBit_hl(y) : executor.resetBit(y, r8.get(z));
             case 3:
                 return (z == 6) ? executor.setBit_hl(y) : executor.setBit(y, r8.get(z));
             default:
@@ -301,6 +303,8 @@ public class Z80OperationDecoder implements DebugAware {
                             case 1:
                                 return executor.ld_rp_nn(r16a.get(p));
                         }
+                    case 4:
+                        return executor.neg();
                     case 6:
                         return executor.setIM(im.get(y));
                     case 7:

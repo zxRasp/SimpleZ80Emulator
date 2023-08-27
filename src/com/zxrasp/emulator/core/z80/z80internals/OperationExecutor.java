@@ -322,8 +322,10 @@ public class OperationExecutor {
     }
 
     public long scf() {
-        // todo
-        throw new EmulationException("Not implemented yet");
+        context.set(Flags.C, true);
+        context.set(Flags.N, false);
+        context.set(Flags.H, false);
+        return 4;
     }
 
     public long ccf() {
@@ -456,7 +458,7 @@ public class OperationExecutor {
                 context.set(Flags.N, true);
                 //fixme: context.set(Flags.H, true);
                 context.set(Flags.PV, result > 0xFF);
-                context.set(Flags.C, value > acc);
+                context.set(Flags.C, acc > 0xFF - value);
         }
     }
 
@@ -502,6 +504,17 @@ public class OperationExecutor {
         return 17;
     }
 
+    public long call_cc_nn(Conditions condition) {
+        boolean cc = checkCondition(condition);
+
+        if (cc) {
+            return call_nn();
+        }
+
+        context.set(PC, context.get(PC) + 2);
+        return 10;
+    }
+
     public long ret() {
         int sp = context.get(SP);
         int jumpAddress = bus.readWordFromMemory(sp);
@@ -529,15 +542,12 @@ public class OperationExecutor {
 
     public long jp_cc(Conditions condition) {
         boolean cc = checkCondition(condition);
-        int pc = context.get(PC);
 
         if (cc) {
-            int jumpAddress = bus.readWordFromMemory(pc + 1);
-            context.set(PC, jumpAddress);
-            return 10;
+            return jp_nn();
         }
 
-        context.set(PC, pc + 3);
+        context.set(PC, context.get(PC) + 2);
         return 10;
     }
 
@@ -552,6 +562,26 @@ public class OperationExecutor {
     public long jp_nn() {
         context.set(PC, bus.readWordFromMemory(context.get(PC)));
         return 10;
+    }
+
+    public long ex_sp_hl() {
+        RegisterSpecial addressRegister = context.getCurrentAddressRegister();
+        int sp = context.get(SP);
+        int stack = bus.readWordFromMemory(sp);
+
+        if (addressRegister == null) {
+            int hl = context.get(HL);
+            context.set(HL, stack);
+            bus.writeWordToMemory(sp, hl);
+            return 19;
+        } else if (addressRegister == IX || addressRegister == IY) {
+            int rvalue = context.get(addressRegister);
+            context.set(addressRegister, stack);
+            bus.writeWordToMemory(sp, rvalue);
+            return 23;
+        } else {
+            throw new EmulationException("Unexpected address register: " + addressRegister);
+        }
     }
 
     public long ex_de_hl() {
@@ -714,11 +744,33 @@ public class OperationExecutor {
     }
 
     public long testBit(int bit, Register8 register) {
-        throw new EmulationException("Not implemented yet");
+        int value = context.get(register);
+        int result = (value >>> bit) & 1;
+        context.set(Flags.Z, result == 0);
+        context.set(Flags.N, false);
+        context.set(Flags.H, true);
+        return 8;
+    }
+
+    public long testBit_hl(int bit) {
+        int value = readByteFromMemoryHL();
+        int result = (value >>> bit) & 1;
+        context.set(Flags.Z, result == 0);
+        context.set(Flags.N, false);
+        context.set(Flags.H, true);
+        return 12;
     }
 
     public long resetBit(int bit, Register8 register) {
-        throw new EmulationException("Not implemented yet");
+        int value = context.get(register);
+        context.set(register, value & ~(1 << bit));
+        return 8;
+    }
+
+    public long resetBit_hl(int bit) {
+        int value = readByteFromMemoryHL();
+        writeByteToMemoryHL(value & ~(1 << bit));
+        return 15;
     }
 
     public long setBit(int bit, Register8 register) {
@@ -822,5 +874,18 @@ public class OperationExecutor {
         } else {
             throw new EmulationException("Unexpected address register: " + addressRegister);
         }
+    }
+
+    public long neg() {
+        int acc = context.get(A);
+        int result = -acc;
+        context.set(A, result);
+        context.set(Flags.S, checkSign8(result));
+        context.set(Flags.Z, result == 0);
+        //fixme: context.set(Flags.H, true);
+        context.set(Flags.PV, acc == 0x80);
+        context.set(Flags.N, true);
+        context.set(Flags.C, acc != 0);
+        return 8;
     }
 }
